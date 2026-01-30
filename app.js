@@ -62,6 +62,7 @@ function preprocessInput(expr) {
     s = s.replace(/(\))([a-z])/g, '$1*$2');
 
     // Replace math functions
+    // Note: In Vietnamese math, log = log10, ln = natural log
     const mathFunctions = {
         'sin': 'Math.sin',
         'cos': 'Math.cos',
@@ -71,8 +72,8 @@ function preprocessInput(expr) {
         'exp': 'Math.exp',
         'log10': 'Math.log10',
         'log2': 'Math.log2',
-        'ln': 'Math.log',
-        'log': 'Math.log',
+        'ln': 'Math.log',        // Natural logarithm
+        'log': 'Math.log10',     // Base 10 logarithm (Vietnamese convention)
         'arcsin': 'Math.asin',
         'arccos': 'Math.acos',
         'arctan': 'Math.atan',
