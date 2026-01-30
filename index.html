@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WISDEMY - Solid of Revolution Visualizer</title>
+    <meta name="description" content="Công cụ trực quan hóa khối tròn xoay 3D - Solid of Revolution Visualizer">
+
+    <!-- KaTeX for LaTeX rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+    <!-- Custom styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Control Panel (Left Side) -->
+        <aside class="control-panel">
+            <header class="panel-header">
+                <h1>🌀 WISDEMY</h1>
+                <p class="subtitle">Solid of Revolution Visualizer</p>
+            </header>
+
+            <div class="control-section">
+                <!-- Function f(x) Input -->
+                <div class="input-group">
+                    <label for="input-f">Hàm f(x) <span class="hint">(đường trên)</span></label>
+                    <input type="text" id="input-f" value="sqrt(9-x^2) + 1" placeholder="Ví dụ: sin(x)^2 + 2x">
+                    <div id="preview-f" class="latex-preview"></div>
+                </div>
+
+                <!-- Function g(x) Input -->
+                <div class="input-group">
+                    <label for="input-g">Hàm g(x) <span class="hint">(đường dưới)</span></label>
+                    <input type="text" id="input-g" value="0" placeholder="Ví dụ: 0 hoặc x/2">
+                    <div id="preview-g" class="latex-preview"></div>
+                </div>
+
+                <p class="tip">💡 Nhấn Enter để cập nhật hình 3D</p>
+            </div>
+
+            <div class="control-section">
+                <!-- Slider a -->
+                <div class="slider-group">
+                    <label>
+                        <span>Cận a:</span>
+                        <span id="value-a" class="slider-value">-2.00</span>
+                    </label>
+                    <input type="range" id="slider-a" min="-50" max="50" value="-20" step="1">
+                </div>
+
+                <!-- Slider b -->
+                <div class="slider-group">
+                    <label>
+                        <span>Cận b:</span>
+                        <span id="value-b" class="slider-value">2.00</span>
+                    </label>
+                    <input type="range" id="slider-b" min="-50" max="50" value="20" step="1">
+                </div>
+
+                <!-- Slider Angle -->
+                <div class="slider-group">
+                    <label>
+                        <span>Góc quay:</span>
+                        <span id="value-angle" class="slider-value">360°</span>
+                    </label>
+                    <input type="range" id="slider-angle" min="0" max="360" value="360" step="1">
+                </div>
+            </div>
+
+            <div class="control-section info-section">
+                <h3>📐 Công thức thể tích</h3>
+                <div id="volume-formula" class="formula-display"></div>
+                <div class="volume-result">
+                    <span>V ≈</span>
+                    <span id="volume-value" class="volume-number">--</span>
+                </div>
+            </div>
+
+            <footer class="panel-footer">
+                <p>Xoay chuột để xem 3D • Scroll để zoom</p>
+            </footer>
+        </aside>
+
+        <!-- 3D Canvas (Right Side) -->
+        <main class="canvas-container">
+            <div id="three-canvas"></div>
+            <div id="error-overlay" class="error-overlay hidden">
+                <span class="error-icon">⚠️</span>
+                <span class="error-text">Miền xác định không hợp lệ</span>
+            </div>
+        </main>
+    </div>
+
+    <!-- Three.js with ES Module -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="app.js"></script>
+</body>
+
+</html>

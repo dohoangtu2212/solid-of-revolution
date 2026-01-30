@@ -1,0 +1,423 @@
+/* ========================================
+   WISDEMY - Solid of Revolution Visualizer
+   Modern, Premium UI Design
+   ======================================== */
+
+/* --- CSS Variables --- */
+:root {
+    --bg-primary: #0f0f1a;
+    --bg-secondary: #1a1a2e;
+    --bg-glass: rgba(26, 26, 46, 0.85);
+    --accent-primary: #00d4ff;
+    --accent-secondary: #7b2cbf;
+    --accent-gradient: linear-gradient(135deg, #00d4ff 0%, #7b2cbf 100%);
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0b0;
+    --text-muted: #6a6a7a;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --success: #00ff88;
+    --warning: #ffaa00;
+    --error: #ff4466;
+    --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.3);
+    --panel-width: 380px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- Reset & Base --- */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+}
+
+/* --- App Container --- */
+.app-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* --- Control Panel --- */
+.control-panel {
+    width: var(--panel-width);
+    min-width: var(--panel-width);
+    height: 100%;
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    z-index: 10;
+}
+
+/* Custom Scrollbar */
+.control-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.control-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.control-panel::-webkit-scrollbar-thumb {
+    background: var(--accent-primary);
+    border-radius: 3px;
+}
+
+/* --- Panel Header --- */
+.panel-header {
+    padding: 24px 20px;
+    text-align: center;
+    background: var(--accent-gradient);
+    position: relative;
+    overflow: hidden;
+}
+
+.panel-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.5;
+}
+
+.panel-header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+    position: relative;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.panel-header .subtitle {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    font-weight: 400;
+    position: relative;
+}
+
+/* --- Control Sections --- */
+.control-section {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* --- Input Groups --- */
+.input-group {
+    margin-bottom: 16px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.input-group label .hint {
+    font-weight: 400;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.input-group input[type="text"] {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: 'Consolas', 'Monaco', monospace;
+    transition: var(--transition);
+}
+
+.input-group input[type="text"]:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.input-group input[type="text"]::placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* --- LaTeX Preview --- */
+.latex-preview {
+    min-height: 50px;
+    margin-top: 10px;
+    padding: 12px;
+    background: rgba(0, 212, 255, 0.05);
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.latex-preview .katex {
+    font-size: 1.3rem;
+    color: var(--accent-primary);
+}
+
+.latex-preview.error {
+    background: rgba(255, 68, 102, 0.1);
+    border-color: var(--error);
+}
+
+.latex-preview.error::after {
+    content: '⚠️ Lỗi cú pháp';
+    color: var(--error);
+    font-size: 0.85rem;
+}
+
+/* --- Tip Text --- */
+.tip {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    margin-top: 8px;
+}
+
+/* --- Slider Groups --- */
+.slider-group {
+    margin-bottom: 20px;
+}
+
+.slider-group label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+
+.slider-value {
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+    font-family: 'Consolas', monospace;
+}
+
+/* Custom Range Slider */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+input[type="range"]:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    background: var(--accent-gradient);
+    border-radius: 50%;
+    cursor: grab;
+    box-shadow: 0 2px 10px rgba(0, 212, 255, 0.4);
+    transition: var(--transition);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: var(--shadow-glow);
+}
+
+input[type="range"]::-webkit-slider-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.1);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    background: var(--accent-gradient);
+    border-radius: 50%;
+    cursor: grab;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0, 212, 255, 0.4);
+}
+
+/* --- Info Section --- */
+.info-section {
+    background: rgba(123, 44, 191, 0.1);
+}
+
+.info-section h3 {
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+    color: var(--accent-secondary);
+}
+
+.formula-display {
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    margin-bottom: 12px;
+}
+
+.formula-display .katex {
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+.volume-result {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px;
+    background: var(--accent-gradient);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+}
+
+.volume-number {
+    font-size: 1.4rem;
+    font-family: 'Consolas', monospace;
+}
+
+/* --- Panel Footer --- */
+.panel-footer {
+    margin-top: auto;
+    padding: 16px 20px;
+    text-align: center;
+    border-top: 1px solid var(--border-color);
+}
+
+.panel-footer p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* --- Canvas Container --- */
+.canvas-container {
+    flex: 1;
+    position: relative;
+    background: radial-gradient(ellipse at center, #1a1a2e 0%, #0f0f1a 100%);
+    overflow: hidden;
+}
+
+#three-canvas {
+    width: 100%;
+    height: 100%;
+}
+
+#three-canvas canvas {
+    display: block;
+}
+
+/* --- Error Overlay --- */
+.error-overlay {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 68, 102, 0.9);
+    padding: 12px 24px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    box-shadow: 0 4px 20px rgba(255, 68, 102, 0.4);
+    animation: slideDown 0.3s ease-out;
+    z-index: 100;
+}
+
+.error-overlay.hidden {
+    display: none;
+}
+
+.error-icon {
+    font-size: 1.2rem;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 900px) {
+    .app-container {
+        flex-direction: column;
+    }
+
+    .control-panel {
+        width: 100%;
+        min-width: unset;
+        max-height: 50vh;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .canvas-container {
+        flex: 1;
+        min-height: 50vh;
+    }
+}
+
+/* --- Loading Animation --- */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.6;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+.loading {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* --- Utilities --- */
+.hidden {
+    display: none !important;
+}
