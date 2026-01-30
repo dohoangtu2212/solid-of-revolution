@@ -13,6 +13,11 @@
 
     <!-- Custom styles -->
     <link rel="stylesheet" href="styles.css">
+
+    <!-- Quicksand Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
@@ -20,21 +25,30 @@
         <!-- Control Panel (Left Side) -->
         <aside class="control-panel">
             <header class="panel-header">
-                <h1>🌀 WISDEMY</h1>
-                <p class="subtitle">Solid of Revolution Visualizer</p>
+                <div class="logo-row">
+                    <img src="owl-logo.png" alt="WISDEMY" class="owl-logo">
+                    <h1>WISDEMY</h1>
+                </div>
+                <p class="subtitle">Khối tròn xoay</p>
             </header>
 
             <div class="control-section">
-                <!-- Function f(x) Input -->
+                <!-- Function f(x) Input with inline color -->
                 <div class="input-group">
-                    <label for="input-f">Hàm f(x) <span class="hint">(đường trên)</span></label>
+                    <label for="input-f" class="label-with-color">
+                        <span>Hàm f(x) <span class="hint">(đường trên)</span></span>
+                        <input type="color" id="color-f" value="#ff6b6b" title="Màu f(x)">
+                    </label>
                     <input type="text" id="input-f" value="sqrt(9-x^2)" placeholder="Ví dụ: sin(x)^2 + 2x">
                     <div id="preview-f" class="latex-preview"></div>
                 </div>
 
-                <!-- Function g(x) Input -->
+                <!-- Function g(x) Input with inline color -->
                 <div class="input-group">
-                    <label for="input-g">Hàm g(x) <span class="hint">(đường dưới)</span></label>
+                    <label for="input-g" class="label-with-color">
+                        <span>Hàm g(x) <span class="hint">(đường dưới)</span></span>
+                        <input type="color" id="color-g" value="#51cf66" title="Màu g(x)">
+                    </label>
                     <input type="text" id="input-g" value="0" placeholder="Ví dụ: 0 hoặc x/2">
                     <div id="preview-g" class="latex-preview"></div>
                 </div>
@@ -43,22 +57,23 @@
             </div>
 
             <div class="control-section">
-                <!-- Slider a -->
-                <div class="slider-group">
-                    <label>
-                        <span>Cận a:</span>
-                        <span id="value-a" class="slider-value">-2.00</span>
-                    </label>
-                    <input type="range" id="slider-a" min="-50" max="50" value="-20" step="1">
+                <!-- Bounds Section Header with Color Picker -->
+                <div class="section-title-row">
+                    <span class="section-label">Miền tích phân [a, b]</span>
+                    <div class="color-wrapper" title="Màu giới hạn">
+                        <input type="color" id="color-bounds" value="#ffd43b">
+                    </div>
                 </div>
 
-                <!-- Slider b -->
-                <div class="slider-group">
-                    <label>
-                        <span>Cận b:</span>
-                        <span id="value-b" class="slider-value">2.00</span>
-                    </label>
-                    <input type="range" id="slider-b" min="-50" max="50" value="20" step="1">
+                <div class="bounds-row">
+                    <div class="input-bound">
+                        <label for="input-a">Cận a</label>
+                        <input type="number" id="input-a" value="-2" step="0.5">
+                    </div>
+                    <div class="input-bound">
+                        <label for="input-b">Cận b</label>
+                        <input type="number" id="input-b" value="2" step="0.5">
+                    </div>
                 </div>
 
                 <!-- Slider Angle -->
@@ -69,19 +84,36 @@
                     </label>
                     <input type="range" id="slider-angle" min="0" max="360" value="360" step="1">
                 </div>
+
+                <!-- Slider Opacity -->
+                <div class="slider-group">
+                    <label>
+                        <span>Độ trong suốt:</span>
+                        <span id="value-opacity" class="slider-value">0.70</span>
+                    </label>
+                    <input type="range" id="slider-opacity" min="0" max="100" value="70" step="1">
+                </div>
+
+                <!-- Color Picker for solid -->
+                <div class="input-group color-group">
+                    <label for="color-solid">Màu khối:</label>
+                    <input type="color" id="color-solid" value="#00b4d8">
+                </div>
             </div>
 
-            <div class="control-section info-section">
-                <h3>📐 Công thức thể tích</h3>
-                <div id="volume-formula" class="formula-display"></div>
-                <div class="volume-result">
-                    <span>V ≈</span>
-                    <span id="volume-value" class="volume-number">--</span>
+            <div class="control-section info-section decorated-panel">
+                <div class="result-item">
+                    <span class="result-label">Diện tích S</span>
+                    <span id="area-value" class="result-number">--</span>
+                </div>
+                <div class="result-item highlight">
+                    <span class="result-label">Thể tích V</span>
+                    <span id="volume-value" class="result-number">--</span>
                 </div>
             </div>
 
             <footer class="panel-footer">
-                <p>Xoay chuột để xem 3D • Scroll để zoom</p>
+                <p>Xoay để xem 3D - Cuộn để phóng to/thu nhỏ</p>
             </footer>
         </aside>
 
