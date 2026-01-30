@@ -740,13 +740,12 @@ function updateMeasurements(a, b, angleDeg) {
     const n = 1000;
     const dx = (b - a) / n;
     let volume = 0;
-    let lateralArea = 0;
-    let crossSectionArea = 0;
+    let area2D = 0;
 
     const fProcessed = preprocessInput(inputF.value);
     const gProcessed = preprocessInput(inputG.value);
 
-    // Initial values at x = a
+    // Initial values at x = a (needed for Trapezoidal rule)
     let f_prev = safeEval(fProcessed, a);
     let g_prev = safeEval(gProcessed, a);
     if (!isFinite(f_prev)) f_prev = 0;
@@ -770,64 +769,41 @@ function updateMeasurements(a, b, angleDeg) {
         const rInner = (rg_prev + rg_next) / 2;
         volume += (rOuter * rOuter - rInner * rInner) * dx;
 
-        // Lateral Area (Outer)
-        const slantF = Math.sqrt(dx * dx + (rf_next - rf_prev) ** 2);
-        lateralArea += Math.PI * (rf_prev + rf_next) * slantF;
-
-        // Lateral Area (Inner)
-        const slantG = Math.sqrt(dx * dx + (rg_next - rg_prev) ** 2);
-        lateralArea += Math.PI * (rg_prev + rg_next) * slantG;
-
-        // Cross Section Area (for cut faces)
-        // Area = ∫ | |f| - |g| | dx
+        // 2D Area (Region between curves) -> ∫ |rf - rg| dx
         const h_prev = Math.abs(rf_prev - rg_prev);
         const h_next = Math.abs(rf_next - rg_next);
-        crossSectionArea += (h_prev + h_next) / 2 * dx;
+        area2D += (h_prev + h_next) / 2 * dx;
 
         f_prev = f_next;
         g_prev = g_next;
     }
 
-    // End Caps Area (Annulus)
-    // Left Cap at a (recompute exactly)
-    let fa = safeEval(fProcessed, a); let ga = safeEval(gProcessed, a);
-    if (!isFinite(fa)) fa = 0; if (!isFinite(ga)) ga = 0;
-    const capA = Math.PI * Math.abs(fa * fa - ga * ga);
-
-    // Right Cap at b
-    let fb = safeEval(fProcessed, b); let gb = safeEval(gProcessed, b);
-    if (!isFinite(fb)) fb = 0; if (!isFinite(gb)) gb = 0;
-    const capB = Math.PI * Math.abs(fb * fb - gb * gb);
-
-    // Total Calculation based on Angle
+    // Volume depends on Angle
     const ratio = angleDeg / 360;
     volume = Math.abs(Math.PI * volume * ratio);
 
-    let totalArea = lateralArea * ratio + (capA + capB) * ratio;
-
-    // Add Cut Faces if partial revolution
-    if (angleDeg < 360) {
-        totalArea += 2 * crossSectionArea;
-    }
+    // Area is 2D region, independent of rotation angle?
+    // User requested "Diện tích sinh ra bởi hai đường cong".
+    // Usually this means the area of the shape itself.
+    // If they meant rotation, they would say "Surface Area".
+    // We assume 2D Area of the region.
 
     // Update UI
     if (volumeValue) volumeValue.textContent = volume.toFixed(2);
 
     const areaValue = document.getElementById('area-value');
-    if (areaValue) areaValue.textContent = totalArea.toFixed(2);
+    if (areaValue) areaValue.textContent = area2D.toFixed(2);
 
     // Hide formula
     const volumeFormula = document.getElementById('volume-formula');
-    if (volumeFormula) volumeFormula.parentElement.style.display = 'none'; // Hide the whole block optionally
-    // Or just clear it as requested: "bỏ phần Công thức thể tích"
+    if (volumeFormula) volumeFormula.parentElement.style.display = 'none';
+
     const infoSection = document.querySelector('.info-section');
     if (infoSection) {
-        // We modified HTML structure to remove h3 and formula div, 
-        // but if they exist (old cached html) hide them.
-        // Our HTML update removed them, so this is safety.
-        // We just ensure we update result rows.
+        // Ensure styling is consistent
     }
 }
+
 
 // ============================================
 // EVENT LISTENERS
