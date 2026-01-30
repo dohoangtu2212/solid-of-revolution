@@ -24,6 +24,7 @@ const CONFIG = {
 let scene, camera, renderer, controls;
 let solidMesh = null;
 let profileLine = null;
+let axisObjects = []; // Track axis objects for dynamic updates
 
 // DOM Elements
 const inputF = document.getElementById('input-f');
@@ -233,8 +234,11 @@ function initThreeJS() {
     fillLight.position.set(-10, 5, -10);
     scene.add(fillLight);
 
-    // Coordinate Axes
-    drawCoordinateAxes();
+    // Grid (static)
+    const gridHelper = new THREE.GridHelper(10, 20, 0x333355, 0x222244);
+    gridHelper.material.opacity = 0.4;
+    gridHelper.material.transparent = true;
+    scene.add(gridHelper);
 
     // Handle resize
     window.addEventListener('resize', onWindowResize);
@@ -243,53 +247,114 @@ function initThreeJS() {
     animate();
 }
 
-function drawCoordinateAxes() {
-    const L = CONFIG.axisLength;
+/**
+ * Draw dynamic coordinate axes based on function bounds
+ * @param {number} xPosLimit - Positive X limit
+ * @param {number} xNegLimit - Negative X limit (value < 0)
+ * @param {number} rLimit - Radius limit for Y/Z axes
+ */
+function drawDynamicAxes(xPosLimit, xNegLimit, rLimit) {
+    // Remove old axis objects
+    axisObjects.forEach(obj => {
+        scene.remove(obj);
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+            if (Array.isArray(obj.material)) {
+                obj.material.forEach(m => m.dispose());
+            } else {
+                obj.material.dispose();
+            }
+        }
+    });
+    axisObjects = [];
+
+    // Calculate axis lengths with padding
+    const L_x_pos = Math.max(xPosLimit + 1.5, 3.0);
+    const L_x_neg = Math.max(Math.abs(xNegLimit) + 1.5, 1.2);
+    const L_r = Math.max(rLimit + 1.5, 3.0);
+    const neg_r = 1.2; // Fixed negative extension for Y/Z
+
     const axisColor = 0x888899;
+    const axisMaterial = new THREE.LineBasicMaterial({ color: axisColor, linewidth: 2 });
 
-    // Arrow helper for axes
-    const xDir = new THREE.Vector3(1, 0, 0);
-    const yDir = new THREE.Vector3(0, 1, 0);
-    const zDir = new THREE.Vector3(0, 0, 1);
-    const origin = new THREE.Vector3(0, 0, 0);
+    // X-axis: from -L_x_neg to L_x_pos
+    const xAxisGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-L_x_neg, 0, 0),
+        new THREE.Vector3(L_x_pos, 0, 0)
+    ]);
+    const xAxis = new THREE.Line(xAxisGeom, axisMaterial);
+    scene.add(xAxis);
+    axisObjects.push(xAxis);
 
-    const xArrow = new THREE.ArrowHelper(xDir, origin, L, axisColor, 0.3, 0.15);
-    const yArrow = new THREE.ArrowHelper(yDir, origin, L, axisColor, 0.3, 0.15);
-    const zArrow = new THREE.ArrowHelper(zDir, origin, L, axisColor, 0.3, 0.15);
+    // Y-axis
+    const yAxisGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, -neg_r, 0),
+        new THREE.Vector3(0, L_r, 0)
+    ]);
+    const yAxis = new THREE.Line(yAxisGeom, axisMaterial);
+    scene.add(yAxis);
+    axisObjects.push(yAxis);
 
+    // Z-axis
+    const zAxisGeom = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, -neg_r),
+        new THREE.Vector3(0, 0, L_r)
+    ]);
+    const zAxis = new THREE.Line(zAxisGeom, axisMaterial);
+    scene.add(zAxis);
+    axisObjects.push(zAxis);
+
+    // Arrow heads (cones)
+    const coneGeom = new THREE.ConeGeometry(0.1, 0.3, 16);
+    const coneMaterial = new THREE.MeshBasicMaterial({ color: axisColor });
+
+    // X arrow
+    const xArrow = new THREE.Mesh(coneGeom.clone(), coneMaterial);
+    xArrow.position.set(L_x_pos, 0, 0);
+    xArrow.rotation.z = -Math.PI / 2;
     scene.add(xArrow);
+    axisObjects.push(xArrow);
+
+    // Y arrow
+    const yArrow = new THREE.Mesh(coneGeom.clone(), coneMaterial);
+    yArrow.position.set(0, L_r, 0);
     scene.add(yArrow);
+    axisObjects.push(yArrow);
+
+    // Z arrow
+    const zArrow = new THREE.Mesh(coneGeom.clone(), coneMaterial);
+    zArrow.position.set(0, 0, L_r);
+    zArrow.rotation.x = Math.PI / 2;
     scene.add(zArrow);
-
-    // Negative extensions
-    const negMaterial = new THREE.LineBasicMaterial({ color: axisColor, opacity: 0.5, transparent: true });
-
-    const xNeg = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(-1.5, 0, 0), new THREE.Vector3(0, 0, 0)
-    ]);
-    scene.add(new THREE.Line(xNeg, negMaterial));
-
-    const yNeg = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(0, -1.5, 0), new THREE.Vector3(0, 0, 0)
-    ]);
-    scene.add(new THREE.Line(yNeg, negMaterial));
-
-    const zNeg = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(0, 0, -1.5), new THREE.Vector3(0, 0, 0)
-    ]);
-    scene.add(new THREE.Line(zNeg, negMaterial));
+    axisObjects.push(zArrow);
 
     // Labels
-    createTextSprite('x', L + 0.4, 0, 0);
-    createTextSprite('y', 0, L + 0.4, 0);
-    createTextSprite('z', 0, 0, L + 0.4);
-    createTextSprite('O', -0.3, -0.3, 0);
+    const xLabel = createAxisSprite('x', L_x_pos + 0.4, 0, 0);
+    const yLabel = createAxisSprite('y', 0, L_r + 0.4, 0);
+    const zLabel = createAxisSprite('z', 0, 0, L_r + 0.4);
+    const oLabel = createAxisSprite('O', -0.3, -0.3, 0);
+    axisObjects.push(xLabel, yLabel, zLabel, oLabel);
+}
 
-    // Grid on XZ plane
-    const gridHelper = new THREE.GridHelper(10, 20, 0x333355, 0x222244);
-    gridHelper.material.opacity = 0.4;
-    gridHelper.material.transparent = true;
-    scene.add(gridHelper);
+function createAxisSprite(text, x, y, z) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'italic 64px Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 64, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(material);
+    sprite.position.set(x, y, z);
+    sprite.scale.set(0.6, 0.6, 1);
+    scene.add(sprite);
+    return sprite;
 }
 
 function createTextSprite(text, x, y, z) {
@@ -480,6 +545,19 @@ function updateSolid() {
     });
     profileLine = new THREE.Line(lineGeometry, lineMaterial);
     scene.add(profileLine);
+
+    // ====== DYNAMIC AXES ======
+    // Calculate limits based on function bounds
+    const xMaxLimit = Math.max(a, b, 0);
+    const xMinLimit = Math.min(a, b, 0);
+
+    // Max radius from outer and inner functions
+    const rMaxOuter = Math.max(...yOuter.map(Math.abs));
+    const rMaxInner = Math.max(...yInner.map(Math.abs));
+    const rMaxLimit = Math.max(rMaxOuter, rMaxInner);
+
+    // Draw dynamic axes
+    drawDynamicAxes(xMaxLimit, xMinLimit, rMaxLimit);
 
     // Calculate volume
     calculateVolume(a, b, angleDeg);
