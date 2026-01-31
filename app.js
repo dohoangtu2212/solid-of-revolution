@@ -250,17 +250,24 @@ function initThreeJS() {
     controls.minDistance = 3;
     controls.maxDistance = 50;
 
-    // Lighting
-    const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+    // Lighting - designed for typical isometric viewing angle
+    const ambient = new THREE.AmbientLight(0xffffff, 0.4);  // Reduced ambient for more contrast
     scene.add(ambient);
 
-    const mainLight = new THREE.DirectionalLight(0xffffff, 1);
-    mainLight.position.set(10, 15, -10);  // Behind, right, above
+    // Main light: front-right-above (creates primary highlights)
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    mainLight.position.set(5, 8, 12);
     scene.add(mainLight);
 
-    const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
-    fillLight.position.set(-10, 5, 10);   // Front, left, low
+    // Fill light: back-left-low (softens shadows)
+    const fillLight = new THREE.DirectionalLight(0x6688cc, 0.3);
+    fillLight.position.set(-8, -3, -5);
     scene.add(fillLight);
+
+    // Rim light: behind-above (creates edge definition against dark background)
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    rimLight.position.set(-5, 10, -10);
+    scene.add(rimLight);
 
     // Grid handled dynamically in drawDynamicAxes
     // const gridHelper = new THREE.GridHelper(10, 20, 0x333355, 0x222244);
