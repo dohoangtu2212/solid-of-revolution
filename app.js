@@ -476,11 +476,32 @@ function updateSolid() {
     }
     showError(false);
 
+    // ====== CROSS-AXIS PREPROCESSING ======
+    // Compute adjusted radii for mesh generation
+    // When f and g have opposite signs, the region spans the axis -> solid disc (inner = 0)
+    const rOuterArr = [];
+    const rInnerArr = [];
+
+    for (let i = 0; i <= CONFIG.resolution; i++) {
+        const f = yOuter[i];
+        const g = yInner[i];
+
+        if (f * g < 0) {
+            // Opposite signs: region spans the rotation axis
+            rOuterArr.push(Math.max(Math.abs(f), Math.abs(g)));
+            rInnerArr.push(0);
+        } else {
+            // Same sign: washer method
+            rOuterArr.push(Math.max(Math.abs(f), Math.abs(g)));
+            rInnerArr.push(Math.min(Math.abs(f), Math.abs(g)));
+        }
+    }
+
     // Remove existing meshes
     removeSolid();
 
     // ====== CREATE WASHER SOLID ======
-    // Outer surface: f(x), Inner surface: g(x)
+    // Outer surface: rOuterArr, Inner surface: rInnerArr
     // Both rotate around X-axis
 
     const positions = [];
@@ -530,13 +551,13 @@ function updateSolid() {
         return (xSegments + 1) * (thetaSegments + 1);
     }
 
-    // Add outer surface (f(x))
+    // Add outer surface (rOuterArr)
     let vertexCount = 0;
-    vertexCount += addSurface(yOuter, vertexCount, false);
+    vertexCount += addSurface(rOuterArr, vertexCount, false);
 
-    // Add inner surface (g(x)) - with flipped normals
+    // Add inner surface (rInnerArr) - with flipped normals
     const innerStartIdx = vertexCount;
-    vertexCount += addSurface(yInner, innerStartIdx, true);
+    vertexCount += addSurface(rInnerArr, innerStartIdx, true);
 
     // ====== ADD END CAPS (washer discs at x=a and x=b) ======
     // Helper function to add a washer cap at a specific x position
@@ -584,13 +605,13 @@ function updateSolid() {
     }
 
     // Add cap at x = a (left side, facing negative X)
-    const rOuterA = yOuter[0];
-    const rInnerA = yInner[0];
+    const rOuterA = rOuterArr[0];
+    const rInnerA = rInnerArr[0];
     vertexCount += addEndCap(a, rOuterA, rInnerA, vertexCount, -1);
 
     // Add cap at x = b (right side, facing positive X)
-    const rOuterB = yOuter[CONFIG.resolution];
-    const rInnerB = yInner[CONFIG.resolution];
+    const rOuterB = rOuterArr[CONFIG.resolution];
+    const rInnerB = rInnerArr[CONFIG.resolution];
     vertexCount += addEndCap(b, rOuterB, rInnerB, vertexCount, 1);
 
     // Create geometry
@@ -759,19 +780,33 @@ function updateMeasurements(a, b, angleDeg) {
         if (!isFinite(f_next)) f_next = 0;
         if (!isFinite(g_next)) g_next = 0;
 
-        const rf_prev = Math.abs(f_prev);
-        const rf_next = Math.abs(f_next);
-        const rg_prev = Math.abs(g_prev);
-        const rg_next = Math.abs(g_next);
+        // ====== CROSS-AXIS DETECTION ======
+        // Check if f and g have opposite signs at this segment
+        // Use average of prev and next for the segment
+        const f_avg = (f_prev + f_next) / 2;
+        const g_avg = (g_prev + g_next) / 2;
 
-        // Volume (Average/Trapezoidal)
-        const rOuter = (rf_prev + rf_next) / 2;
-        const rInner = (rg_prev + rg_next) / 2;
+        let rOuter, rInner;
+
+        if (f_avg * g_avg < 0) {
+            // Opposite signs: region spans the rotation axis
+            // The solid is a full disc (no hole)
+            rOuter = Math.max(Math.abs(f_avg), Math.abs(g_avg));
+            rInner = 0;
+        } else {
+            // Same sign: use washer method
+            const rf = Math.abs(f_avg);
+            const rg = Math.abs(g_avg);
+            rOuter = Math.max(rf, rg);
+            rInner = Math.min(rf, rg);
+        }
+
+        // Volume (using segment averages)
         volume += (rOuter * rOuter - rInner * rInner) * dx;
 
-        // 2D Area (Region between curves) -> ∫ |rf - rg| dx
-        const h_prev = Math.abs(rf_prev - rg_prev);
-        const h_next = Math.abs(rf_next - rg_next);
+        // 2D Area: ∫ |f(x) - g(x)| dx (actual signed difference, not absolute radii)
+        const h_prev = Math.abs(f_prev - g_prev);
+        const h_next = Math.abs(f_next - g_next);
         area2D += (h_prev + h_next) / 2 * dx;
 
         f_prev = f_next;
