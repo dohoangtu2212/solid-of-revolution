@@ -250,23 +250,28 @@ function initThreeJS() {
     controls.minDistance = 3;
     controls.maxDistance = 50;
 
-    // Lighting - designed for typical isometric viewing angle
-    const ambient = new THREE.AmbientLight(0xffffff, 0.4);  // Reduced ambient for more contrast
+    // Lighting - optimized for default viewing angle (front-right-above)
+    const ambient = new THREE.AmbientLight(0xffffff, 0.5);  // Slightly increased for overall visibility
     scene.add(ambient);
 
     // Main light: front-right-above (creates primary highlights)
-    const mainLight = new THREE.DirectionalLight(0xffffff, 1.0);
-    mainLight.position.set(5, 8, 12);
+    const mainLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    mainLight.position.set(5, 8, 10);
     scene.add(mainLight);
 
-    // Fill light: back-left-low (softens shadows)
-    const fillLight = new THREE.DirectionalLight(0x6688cc, 0.3);
-    fillLight.position.set(-8, -3, -5);
+    // Key light: front-left-above (illuminates the left side visible from default view)
+    const keyLight = new THREE.DirectionalLight(0xffffff, 0.7);
+    keyLight.position.set(-8, 5, 8);   // Front-left
+    scene.add(keyLight);
+
+    // Fill light: back-low (softens harsh shadows)
+    const fillLight = new THREE.DirectionalLight(0x88aacc, 0.4);
+    fillLight.position.set(0, -5, -8);
     scene.add(fillLight);
 
-    // Rim light: behind-above (creates edge definition against dark background)
-    const rimLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    rimLight.position.set(-5, 10, -10);
+    // Rim light: behind-above (edge definition)
+    const rimLight = new THREE.DirectionalLight(0xffffff, 0.3);
+    rimLight.position.set(-5, 8, -8);
     scene.add(rimLight);
 
     // Grid handled dynamically in drawDynamicAxes
