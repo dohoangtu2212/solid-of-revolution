@@ -917,7 +917,10 @@ function updateMeasurements(a, b, angleDeg) {
     const volumeFormula = document.getElementById('volume-formula');
     if (volumeFormula) volumeFormula.parentElement.style.display = 'none';
 
-
+    const infoSection = document.querySelector('.info-section');
+    if (infoSection) {
+        // Ensure styling is consistent
+    }
 }
 
 
