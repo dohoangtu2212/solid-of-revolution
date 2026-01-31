@@ -997,6 +997,24 @@ function setupEventListeners() {
 
     // Color picker - bounds (requires re-render)
     colorBounds.addEventListener('input', updateSolid);
+
+    // Save Image
+    const btnSaveImage = document.getElementById('btn-save-image');
+    if (btnSaveImage) {
+        btnSaveImage.addEventListener('click', () => {
+            // Render specifically for the screenshot to ensure buffer is populated
+            renderer.render(scene, camera);
+
+            // Capture data URL
+            const dataURL = renderer.domElement.toDataURL('image/png');
+
+            // Create download link
+            const link = document.createElement('a');
+            link.download = 'solid-of-revolution.png';
+            link.href = dataURL;
+            link.click();
+        });
+    }
 }
 
 // ============================================
