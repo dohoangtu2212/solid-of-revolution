@@ -627,16 +627,18 @@ function updateSolid() {
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
 
-    // Material - use current opacity and color values
+    // Material - PBR for realistic 3D appearance
     const currentOpacity = sliderOpacity.value / 100;
     const currentColor = colorSolid.value;
-    const material = new THREE.MeshPhongMaterial({
+    const material = new THREE.MeshStandardMaterial({
         color: currentColor,
         transparent: true,
         opacity: currentOpacity,
         side: THREE.DoubleSide,
-        shininess: 80,
-        specular: 0x444444,
+        metalness: 0.1,          // Slight metallic sheen
+        roughness: 0.4,          // Moderate roughness for visible highlights
+        emissive: currentColor,  // Subtle self-glow
+        emissiveIntensity: 0.05, // Very subtle
     });
 
     solidMesh = new THREE.Mesh(geometry, material);
