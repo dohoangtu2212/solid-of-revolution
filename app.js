@@ -227,7 +227,7 @@ function renderLatexPreview(expr, container) {
 function initThreeJS() {
     // Scene
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0f0f1a);
+    scene.background = new THREE.Color(0x1e2433);  // Warm dark blue (educational)
 
     // Camera - Z-up coordinate system
     const aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;

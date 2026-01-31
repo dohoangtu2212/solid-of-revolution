@@ -5,30 +5,33 @@
 
 /* --- CSS Variables --- */
 :root {
-    /* Brand Colors */
+    /* Brand Colors - Keep original */
     --primary-color: #bb2649;
     /* Deep Pink/Red */
     --secondary-color: #ffb3c1;
     /* Light Pink */
 
-    /* Backgrounds: Dark Theme */
-    --bg-primary: #0f0f1a;
-    /* Canvas Match */
-    --bg-secondary: #1a1a2e;
-    /* Panel BG */
-    --bg-glass: rgba(26, 26, 46, 0.95);
-    --bg-input: rgba(0, 0, 0, 0.4);
+    /* Backgrounds: Warm Dark Theme (Educational) */
+    --bg-primary: #1e2433;
+    /* Warm dark blue - main background */
+    --bg-secondary: #252d3d;
+    /* Slightly lighter - panel BG */
+    --bg-glass: rgba(37, 45, 61, 0.95);
+    --bg-input: rgba(0, 0, 0, 0.3);
 
     /* Accents */
     --accent-glow: rgba(187, 38, 73, 0.4);
 
-    /* Text */
-    --text-primary: #ffffff;
-    --text-secondary: #e0e0e0;
-    --text-muted: #9999bb;
+    /* Text - Warmer tones */
+    --text-primary: #f0f0f0;
+    /* Soft white (less harsh) */
+    --text-secondary: #d0d5dd;
+    /* Warm gray */
+    --text-muted: #a0aec0;
+    /* Warm blue-gray */
 
     /* Borders */
-    --border-color: rgba(255, 255, 255, 0.12);
+    --border-color: rgba(255, 255, 255, 0.1);
 
     /* Layout */
     --panel-width: 380px;
