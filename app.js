@@ -319,9 +319,9 @@ function drawDynamicAxes(xPosLimit, xNegLimit, rLimit) {
     const gridSize = Math.ceil(Math.max(L_x_pos, L_x_neg, L_r)) * 2 + 2;
     const divisions = gridSize; // 1 unit per division
 
-    dynamicGrid = new THREE.GridHelper(gridSize, divisions, 0x444466, 0x222233);
+    dynamicGrid = new THREE.GridHelper(gridSize, divisions, 0x4a5568, 0x374151);  // Lighter gray for visibility
     dynamicGrid.rotation.x = Math.PI / 2; // Rotate to OXY plane
-    dynamicGrid.material.opacity = 0.25;
+    dynamicGrid.material.opacity = 0.4;   // Increased opacity
     dynamicGrid.material.transparent = true;
     scene.add(dynamicGrid);
     // ==========================
