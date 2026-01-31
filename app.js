@@ -255,11 +255,11 @@ function initThreeJS() {
     scene.add(ambient);
 
     const mainLight = new THREE.DirectionalLight(0xffffff, 1);
-    mainLight.position.set(10, 15, 10);
+    mainLight.position.set(10, 15, -10);  // Behind, right, above
     scene.add(mainLight);
 
     const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
-    fillLight.position.set(-10, 5, -10);
+    fillLight.position.set(-10, 5, 10);   // Front, left, low
     scene.add(fillLight);
 
     // Grid handled dynamically in drawDynamicAxes
@@ -639,7 +639,7 @@ function updateSolid() {
     // f(x) line - on XY plane (z=0, positive Y)
     const fPoints = [];
     for (let i = 0; i <= CONFIG.resolution; i++) {
-        fPoints.push(new THREE.Vector3(xValues[i], Math.abs(yOuter[i]), 0));
+        fPoints.push(new THREE.Vector3(xValues[i], yOuter[i], 0));  // No abs - show actual curve
     }
     const fGeometry = new THREE.BufferGeometry().setFromPoints(fPoints);
     const fMaterial = new THREE.LineBasicMaterial({
@@ -652,7 +652,7 @@ function updateSolid() {
     // g(x) line - on XY plane (z=0, positive Y)
     const gPoints = [];
     for (let i = 0; i <= CONFIG.resolution; i++) {
-        gPoints.push(new THREE.Vector3(xValues[i], Math.abs(yInner[i]), 0));
+        gPoints.push(new THREE.Vector3(xValues[i], yInner[i], 0));  // No abs - show actual curve
     }
     const gGeometry = new THREE.BufferGeometry().setFromPoints(gPoints);
     const gMaterial = new THREE.LineBasicMaterial({
@@ -686,20 +686,19 @@ function updateSolid() {
         return line;
     }
 
-    // Line at x = a
-    const yaStart = Math.abs(yInner[0]);
-    const yaEnd = Math.abs(yOuter[0]);
-    // Only draw if there's a visible gap or strict non-zero
-    if (yaEnd > 0 || yaStart > 0) {
-        boundCircleA = createBoundLine(a, yaStart, yaEnd);
+    // Line at x = a (from min to max of both curves)
+    const yaMin = Math.min(yOuter[0], yInner[0]);
+    const yaMax = Math.max(yOuter[0], yInner[0]);
+    if (yaMax !== yaMin) {
+        boundCircleA = createBoundLine(a, yaMin, yaMax);
         scene.add(boundCircleA);
     }
 
-    // Line at x = b
-    const ybStart = Math.abs(yInner[CONFIG.resolution]);
-    const ybEnd = Math.abs(yOuter[CONFIG.resolution]);
-    if (ybEnd > 0 || ybStart > 0) {
-        boundCircleB = createBoundLine(b, ybStart, ybEnd);
+    // Line at x = b (from min to max of both curves)
+    const ybMin = Math.min(yOuter[CONFIG.resolution], yInner[CONFIG.resolution]);
+    const ybMax = Math.max(yOuter[CONFIG.resolution], yInner[CONFIG.resolution]);
+    if (ybMax !== ybMin) {
+        boundCircleB = createBoundLine(b, ybMin, ybMax);
         scene.add(boundCircleB);
     }
 
