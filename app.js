@@ -29,6 +29,7 @@ let boundCircleA = null;
 let boundCircleB = null;
 let axisObjects = []; // Track axis objects for dynamic updates
 let dynamicGrid = null; // Track dynamic grid
+let wireframeMesh = null; // Track wireframe overlay
 
 // DOM Elements
 const inputF = document.getElementById('input-f');
@@ -39,7 +40,9 @@ const inputA = document.getElementById('input-a'); // Changed from slider
 const inputB = document.getElementById('input-b'); // Changed from slider
 const sliderAngle = document.getElementById('slider-angle');
 const sliderOpacity = document.getElementById('slider-opacity');
-const colorSolid = document.getElementById('color-solid');
+const colorStart = document.getElementById('color-start');  // Gradient start color
+const colorEnd = document.getElementById('color-end');      // Gradient end color
+const toggleWireframe = document.getElementById('toggle-wireframe');
 const colorF = document.getElementById('color-f');
 const colorG = document.getElementById('color-g');
 const colorBounds = document.getElementById('color-bounds');
@@ -632,22 +635,45 @@ function updateSolid() {
     geometry.setIndex(indices);
     geometry.computeVertexNormals();
 
-    // Material - PBR for realistic 3D appearance
+    // ====== VERTEX COLORS FOR GRADIENT ======
+    const startColor = new THREE.Color(colorStart.value);
+    const endColor = new THREE.Color(colorEnd.value);
+    const colors = [];
+
+    // Calculate color for each vertex based on its x position
+    for (let i = 0; i < positions.length; i += 3) {
+        const x = positions[i];
+        const t = (x - a) / (b - a);  // Normalize x to [0, 1]
+        const vertexColor = new THREE.Color().lerpColors(startColor, endColor, t);
+        colors.push(vertexColor.r, vertexColor.g, vertexColor.b);
+    }
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+    // Material - PBR with vertex colors for gradient
     const currentOpacity = sliderOpacity.value / 100;
-    const currentColor = colorSolid.value;
     const material = new THREE.MeshStandardMaterial({
-        color: currentColor,
+        vertexColors: true,        // Enable vertex colors for gradient
         transparent: true,
         opacity: currentOpacity,
         side: THREE.DoubleSide,
-        metalness: 0.1,          // Slight metallic sheen
-        roughness: 0.4,          // Moderate roughness for visible highlights
-        emissive: currentColor,  // Subtle self-glow
-        emissiveIntensity: 0.05, // Very subtle
+        metalness: 0.1,
+        roughness: 0.4,
     });
 
     solidMesh = new THREE.Mesh(geometry, material);
     scene.add(solidMesh);
+
+    // ====== WIREFRAME OVERLAY ======
+    if (toggleWireframe.checked) {
+        const wireframeMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.15,
+        });
+        wireframeMesh = new THREE.Mesh(geometry, wireframeMaterial);
+        scene.add(wireframeMesh);
+    }
 
     // ====== CREATE PROFILE LINES ======
     // f(x) line - on XY plane (z=0, positive Y)
@@ -763,6 +789,12 @@ function removeSolid() {
         boundCircleB.geometry.dispose();
         boundCircleB.material.dispose();
         boundCircleB = null;
+    }
+    if (wireframeMesh) {
+        scene.remove(wireframeMesh);
+        wireframeMesh.geometry.dispose();
+        wireframeMesh.material.dispose();
+        wireframeMesh = null;
     }
 }
 
@@ -881,12 +913,12 @@ function setupEventListeners() {
         }
     });
 
-    // Color picker - solid
-    colorSolid.addEventListener('input', () => {
-        if (solidMesh) {
-            solidMesh.material.color.set(colorSolid.value);
-        }
-    });
+    // Gradient color pickers - need full re-render for vertex colors
+    colorStart.addEventListener('input', updateSolid);
+    colorEnd.addEventListener('input', updateSolid);
+
+    // Wireframe toggle
+    toggleWireframe.addEventListener('change', updateSolid);
 
     // Color picker - f(x) line
     colorF.addEventListener('input', () => {

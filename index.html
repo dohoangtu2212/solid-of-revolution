@@ -94,10 +94,29 @@
                     <input type="range" id="slider-opacity" min="0" max="100" value="70" step="1">
                 </div>
 
-                <!-- Color Picker for solid -->
-                <div class="input-group color-group">
-                    <label for="color-solid">Màu khối:</label>
-                    <input type="color" id="color-solid" value="#4ECDC4">
+                <!-- Gradient Color Pickers -->
+                <div class="input-group gradient-group">
+                    <label>Màu gradient:</label>
+                    <div class="gradient-pickers">
+                        <div class="gradient-picker-item">
+                            <span class="gradient-label">a</span>
+                            <input type="color" id="color-start" value="#4ECDC4" title="Màu tại x=a">
+                        </div>
+                        <span class="gradient-arrow">→</span>
+                        <div class="gradient-picker-item">
+                            <span class="gradient-label">b</span>
+                            <input type="color" id="color-end" value="#FF6B6B" title="Màu tại x=b">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wireframe Toggle -->
+                <div class="input-group checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="toggle-wireframe">
+                        <span class="checkbox-custom"></span>
+                        <span>Hiển thị wireframe</span>
+                    </label>
                 </div>
             </div>
 
