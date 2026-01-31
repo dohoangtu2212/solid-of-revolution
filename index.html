@@ -94,40 +94,26 @@
                     <input type="range" id="slider-opacity" min="0" max="100" value="70" step="1">
                 </div>
 
-                <!-- Color Mode Toggle -->
-                <div class="input-group color-mode-group">
+                <!-- Color Mode with Dropdown -->
+                <div class="input-group color-row">
                     <label>Màu khối:</label>
-                    <div class="segmented-control">
-                        <input type="radio" name="color-mode" id="mode-solid" value="solid" checked>
-                        <label for="mode-solid">Đơn sắc</label>
-                        <input type="radio" name="color-mode" id="mode-gradient" value="gradient">
-                        <label for="mode-gradient">Gradient</label>
-                    </div>
-                </div>
-
-                <!-- Single Color Picker (visible when Đơn sắc selected) -->
-                <div class="input-group color-solid-group" id="solid-color-container">
-                    <input type="color" id="color-solid" value="#4ECDC4">
-                </div>
-
-                <!-- Gradient Color Pickers (visible when Gradient selected) -->
-                <div class="input-group gradient-group hidden" id="gradient-container">
-                    <div class="gradient-pickers">
-                        <div class="gradient-picker-item">
-                            <span class="gradient-label">a</span>
-                            <input type="color" id="color-start" value="#4ECDC4" title="Màu tại x=a">
-                        </div>
-                        <span class="gradient-arrow">→</span>
-                        <div class="gradient-picker-item">
-                            <span class="gradient-label">b</span>
-                            <input type="color" id="color-end" value="#FF6B6B" title="Màu tại x=b">
+                    <div class="color-controls">
+                        <select id="color-mode-select">
+                            <option value="solid">Đơn sắc</option>
+                            <option value="gradient-x">Gradient X</option>
+                            <option value="gradient-r">Gradient R</option>
+                        </select>
+                        <div class="color-pickers" id="color-pickers">
+                            <input type="color" id="color-solid" value="#4ECDC4" title="Màu khối">
+                            <input type="color" id="color-start" value="#4ECDC4" class="hidden" title="Màu 1">
+                            <input type="color" id="color-end" value="#FF6B6B" class="hidden" title="Màu 2">
                         </div>
                     </div>
                 </div>
 
-                <!-- Mesh Toggle (iOS-style switch) -->
-                <div class="input-group toggle-group">
-                    <span class="toggle-label">Hiển thị Mesh</span>
+                <!-- Mesh Toggle -->
+                <div class="input-group toggle-row">
+                    <label>Hiển thị Mesh:</label>
                     <label class="switch">
                         <input type="checkbox" id="toggle-wireframe">
                         <span class="switch-slider"></span>

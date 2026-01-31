@@ -41,10 +41,7 @@ const inputB = document.getElementById('input-b');
 const sliderAngle = document.getElementById('slider-angle');
 const sliderOpacity = document.getElementById('slider-opacity');
 // Color mode elements
-const modeSolid = document.getElementById('mode-solid');
-const modeGradient = document.getElementById('mode-gradient');
-const solidColorContainer = document.getElementById('solid-color-container');
-const gradientContainer = document.getElementById('gradient-container');
+const colorModeSelect = document.getElementById('color-mode-select');
 const colorSolid = document.getElementById('color-solid');
 const colorStart = document.getElementById('color-start');
 const colorEnd = document.getElementById('color-end');
@@ -642,21 +639,43 @@ function updateSolid() {
 
     // ====== MATERIAL BASED ON COLOR MODE ======
     const currentOpacity = sliderOpacity.value / 100;
-    const isGradientMode = modeGradient.checked;
+    const colorMode = colorModeSelect.value;
     let material;
 
-    if (isGradientMode) {
+    if (colorMode === 'gradient-x' || colorMode === 'gradient-r') {
         // GRADIENT MODE: Use vertex colors
         const startColor = new THREE.Color(colorStart.value);
         const endColor = new THREE.Color(colorEnd.value);
         const colors = [];
 
-        // Calculate color for each vertex based on its x position
-        for (let i = 0; i < positions.length; i += 3) {
-            const x = positions[i];
-            const t = (x - a) / (b - a);  // Normalize x to [0, 1]
-            const vertexColor = new THREE.Color().lerpColors(startColor, endColor, t);
-            colors.push(vertexColor.r, vertexColor.g, vertexColor.b);
+        if (colorMode === 'gradient-x') {
+            // Gradient along X axis (from a to b)
+            for (let i = 0; i < positions.length; i += 3) {
+                const x = positions[i];
+                const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+                const vertexColor = new THREE.Color().lerpColors(startColor, endColor, t);
+                colors.push(vertexColor.r, vertexColor.g, vertexColor.b);
+            }
+        } else {
+            // Gradient radial (from center outward)
+            // Find max radius for normalization
+            let maxRadius = 0;
+            for (let i = 0; i < positions.length; i += 3) {
+                const y = positions[i + 1];
+                const z = positions[i + 2];
+                const r = Math.sqrt(y * y + z * z);
+                if (r > maxRadius) maxRadius = r;
+            }
+            if (maxRadius === 0) maxRadius = 1;
+
+            for (let i = 0; i < positions.length; i += 3) {
+                const y = positions[i + 1];
+                const z = positions[i + 2];
+                const r = Math.sqrt(y * y + z * z);
+                const t = r / maxRadius;  // 0 at center, 1 at edge
+                const vertexColor = new THREE.Color().lerpColors(startColor, endColor, t);
+                colors.push(vertexColor.r, vertexColor.g, vertexColor.b);
+            }
         }
         geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
@@ -933,22 +952,24 @@ function setupEventListeners() {
         }
     });
 
-    // Color mode toggle
-    modeSolid.addEventListener('change', () => {
-        solidColorContainer.classList.remove('hidden');
-        gradientContainer.classList.add('hidden');
-        updateSolid();
-    });
-
-    modeGradient.addEventListener('change', () => {
-        solidColorContainer.classList.add('hidden');
-        gradientContainer.classList.remove('hidden');
+    // Color mode dropdown
+    colorModeSelect.addEventListener('change', () => {
+        const mode = colorModeSelect.value;
+        if (mode === 'solid') {
+            colorSolid.classList.remove('hidden');
+            colorStart.classList.add('hidden');
+            colorEnd.classList.add('hidden');
+        } else {
+            colorSolid.classList.add('hidden');
+            colorStart.classList.remove('hidden');
+            colorEnd.classList.remove('hidden');
+        }
         updateSolid();
     });
 
     // Solid color picker - live update
     colorSolid.addEventListener('input', () => {
-        if (solidMesh && modeSolid.checked) {
+        if (solidMesh && colorModeSelect.value === 'solid') {
             solidMesh.material.color.set(colorSolid.value);
         }
     });
