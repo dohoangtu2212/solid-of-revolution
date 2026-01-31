@@ -259,9 +259,9 @@ function initThreeJS() {
     mainLight.position.set(5, 8, 10);
     scene.add(mainLight);
 
-    // Key light: front-left-above (illuminates the left side visible from default view)
+    // Key light: front-left-low (illuminates the left side visible from default view)
     const keyLight = new THREE.DirectionalLight(0xffffff, 0.7);
-    keyLight.position.set(-8, 5, 8);   // Front-left
+    keyLight.position.set(-8, -5, 8);   // Front-left-low
     scene.add(keyLight);
 
     // Fill light: back-low (softens harsh shadows)
