@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-console.log('App.js Loaded - Version Piecewise');
+console.log('App.js Loaded - Version Piecewise - Trigger 2');
 
 // ============================================
 // CONFIGURATION
