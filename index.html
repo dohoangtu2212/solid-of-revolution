@@ -41,27 +41,25 @@
             </header>
 
             <div class="control-section">
-                <!-- Function f(x) Input with inline color -->
-                <div class="input-group">
-                    <label for="input-f" class="label-with-color">
-                        <span>Hàm f(x) <span class="hint">(đường trên)</span></span>
-                        <input type="color" id="color-f" value="#ff6b6b" title="Màu f(x)">
-                    </label>
-                    <input type="text" id="input-f" value="x+3" placeholder="Ví dụ: sin(x)^2 + 2x">
-                    <div id="preview-f" class="latex-preview"></div>
+                <!-- Upper Functions Group -->
+                <div class="func-group-header">
+                    <span class="section-label">Hàm đường trên (Upper Limit)</span>
+                    <button id="btn-add-upper" class="btn-icon" title="Thêm hàm">+</button>
+                </div>
+                <div id="upper-funcs-list" class="func-list">
+                    <!-- Dynamic Items will be injected here -->
                 </div>
 
-                <!-- Function g(x) Input with inline color -->
-                <div class="input-group">
-                    <label for="input-g" class="label-with-color">
-                        <span>Hàm g(x) <span class="hint">(đường dưới)</span></span>
-                        <input type="color" id="color-g" value="#51cf66" title="Màu g(x)">
-                    </label>
-                    <input type="text" id="input-g" value="-sqrt(x+3)" placeholder="Ví dụ: 0 hoặc x/2">
-                    <div id="preview-g" class="latex-preview"></div>
+                <!-- Lower Functions Group -->
+                <div class="func-group-header mt-4">
+                    <span class="section-label">Hàm đường dưới (Lower Limit)</span>
+                    <button id="btn-add-lower" class="btn-icon" title="Thêm hàm">+</button>
+                </div>
+                <div id="lower-funcs-list" class="func-list">
+                    <!-- Dynamic Items will be injected here -->
                 </div>
 
-                <p class="tip">💡 Nhấn Enter để cập nhật hình 3D</p>
+
             </div>
 
             <div class="control-section">
@@ -76,11 +74,11 @@
                 <div class="bounds-row">
                     <div class="input-bound">
                         <label for="input-a">Cận a</label>
-                        <input type="number" id="input-a" value="-3" step="0.5">
+                        <input type="text" id="input-a" value="-3" placeholder="-∞">
                     </div>
                     <div class="input-bound">
                         <label for="input-b">Cận b</label>
-                        <input type="number" id="input-b" value="1" step="0.5">
+                        <input type="text" id="input-b" value="1" placeholder="+∞">
                     </div>
                 </div>
 
@@ -103,13 +101,12 @@
                 </div>
 
                 <!-- Color Mode with Dropdown -->
-                <div class="input-group color-row">
-                    <label>Màu khối:</label>
-                    <div class="color-controls">
+                <div class="color-settings-row">
+                    <label for="color-mode-select">Chế độ màu:</label>
+                    <div class="color-inputs-container">
                         <select id="color-mode-select">
-                            <option value="solid">Đơn sắc</option>
-                            <option value="gradient-x" selected>Gradient X</option>
-                            <option value="gradient-r">Gradient R</option>
+                            <option value="solid">Một màu (Solid)</option>
+                            <option value="gradient-x" selected>Gradient</option>
                         </select>
                         <div class="color-pickers" id="color-pickers">
                             <input type="color" id="color-solid" value="#4ECDC4" class="hidden" title="Màu khối">
@@ -127,6 +124,15 @@
                         <span class="switch-slider"></span>
                     </label>
                 </div>
+
+                <!-- Auto Rotate Toggle -->
+                <div class="input-group toggle-row">
+                    <label>Tự động xoay:</label>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-rotate">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
             </div>
 
             <div class="control-section info-section decorated-panel">
@@ -141,6 +147,7 @@
             </div>
 
             <footer class="panel-footer">
+                <button id="btn-share" class="btn-save">🔗 Chia sẻ Link</button>
                 <button id="btn-save-image" class="btn-save">📸 Lưu ảnh PNG</button>
                 <p class="footer-hint">Xoay để xem 3D • Cuộn để phóng to</p>
             </footer>
@@ -150,14 +157,23 @@
         <main class="canvas-container">
             <div id="three-canvas"></div>
             <div id="error-overlay" class="error-overlay hidden">
-                <span class="error-icon">⚠️</span>
-                <span class="error-text">Miền xác định không hợp lệ</span>
+                <div class="error-content">
+                    <h3>Lỗi tính toán!</h3>
+                    <p id="error-message">...</p>
+                    <button onclick="showError(false)">Đóng</button>
+                </div>
             </div>
-        </main>
-    </div>
 
-    <!-- Three.js with ES Module -->
-    <script type="importmap">
+            <!-- Toast Notification -->
+            <div id="toast" class="toast">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Đã copy link!</span>
+            </div>
+
+            <!-- Three.js with ES Module -->
+            <script type="importmap">
     {
         "imports": {
             "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -165,7 +181,7 @@
         }
     }
     </script>
-    <script type="module" src="app.js"></script>
+            <script type="module" src="app.js"></script>
 </body>
 
 </html>

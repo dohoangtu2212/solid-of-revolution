@@ -6,6 +6,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+console.log('App.js Loaded - Version Piecewise');
+
 // ============================================
 // CONFIGURATION
 // ============================================
@@ -23,8 +25,7 @@ const CONFIG = {
 // ============================================
 let scene, camera, renderer, controls;
 let solidMesh = null;
-let profileLineF = null;
-let profileLineG = null;
+let profileLines = [];
 let boundCircleA = null;
 let boundCircleB = null;
 let axisObjects = []; // Track axis objects for dynamic updates
@@ -32,10 +33,7 @@ let dynamicGrid = null; // Track dynamic grid
 let wireframeMesh = null; // Track wireframe overlay
 
 // DOM Elements
-const inputF = document.getElementById('input-f');
-const inputG = document.getElementById('input-g');
-const previewF = document.getElementById('preview-f');
-const previewG = document.getElementById('preview-g');
+// DOM Elements (Updated)
 const inputA = document.getElementById('input-a');
 const inputB = document.getElementById('input-b');
 const sliderAngle = document.getElementById('slider-angle');
@@ -46,8 +44,6 @@ const colorSolid = document.getElementById('color-solid');
 const colorStart = document.getElementById('color-start');
 const colorEnd = document.getElementById('color-end');
 const toggleWireframe = document.getElementById('toggle-wireframe');
-const colorF = document.getElementById('color-f');
-const colorG = document.getElementById('color-g');
 const colorBounds = document.getElementById('color-bounds');
 const valueAngle = document.getElementById('value-angle');
 const valueOpacity = document.getElementById('value-opacity');
@@ -55,6 +51,21 @@ const volumeFormula = document.getElementById('volume-formula');
 const volumeValue = document.getElementById('volume-value');
 const errorOverlay = document.getElementById('error-overlay');
 const canvasContainer = document.getElementById('three-canvas');
+
+// Dynamic List Containers
+const upperFuncsContainer = document.getElementById('upper-funcs-list');
+const lowerFuncsContainer = document.getElementById('lower-funcs-list');
+const btnAddUpper = document.getElementById('btn-add-upper');
+const btnAddLower = document.getElementById('btn-add-lower');
+
+// State for Multiple Functions
+// Each item: { id: string, expr: string, color: string, rangeStart: string, rangeEnd: string, preview: element }
+let upperFuncs = [
+    { id: 'f1', expr: 'x+3', color: '#ff6b6b', rangeStart: '', rangeEnd: '' }
+];
+let lowerFuncs = [
+    { id: 'g1', expr: '-sqrt(x+3)', color: '#51cf66', rangeStart: '', rangeEnd: '' }
+];
 
 // ============================================
 // MATH EXPRESSION PROCESSING
@@ -139,6 +150,47 @@ function safeEval(expr, x) {
 function evaluateFunction(expr, xValues) {
     const processed = preprocessInput(expr);
     return xValues.map(x => safeEval(processed, x));
+}
+
+/**
+ * Evaluate a list of piecewise functions to find the effective boundary
+ * @param {Array} funcsList - List of function objects { expr, rangeStart, rangeEnd }
+ * @param {Array} xValues - Array of x coordinates
+ * @param {string} type - 'upper' (max of overlaps? no, min of overlaps for upper bound logic usually? Wait.)
+ *        For "Upper Boundary Group" (Roof):
+ *        - If multiple functions overlap, the "effective" boundary is usually the one that is "lowest" if we are bounding from above?
+ *        - Wait, user said: "giao nhau... hệ thống sẽ tự động chọn giá trị lớn nhất (đối với nhóm đường trên)".
+ *        - User said: "Max for Upper Group".
+ *        - Let's follow User's explicit request: Max for Upper, Min for Lower (?) OR Max for both?
+ *        - Re-read user request: "Trường hợp có giao nhau... chọn giá trị lớn nhất (nhóm đường trên)".
+ *        - "Nhóm đường dưới": logic đối xứng -> Min?
+ *        - Let's implement flexible Min/Max logic.
+ */
+function evaluatePiecewise(funcsList, xValues, mode) {
+    // 1. Preprocess all expressions
+    const compiledFuncs = funcsList.map(f => ({
+        func: (x) => safeEval(preprocessInput(f.expr), x),
+        range: [
+            f.rangeStart !== '' ? safeEval(preprocessInput(f.rangeStart), 0) : -Infinity,
+            f.rangeEnd !== '' ? safeEval(preprocessInput(f.rangeEnd), 0) : Infinity
+        ]
+    }));
+
+    return xValues.map(x => {
+        // Find active functions for this x
+        const active = compiledFuncs.filter(f => x >= f.range[0] && x <= f.range[1]);
+
+        if (active.length === 0) return 0; // Gap = 0
+
+        const values = active.map(f => f.func(x)).filter(v => isFinite(v));
+        if (values.length === 0) return 0;
+
+        if (mode === 'max') {
+            return Math.max(...values);
+        } else {
+            return Math.min(...values);
+        }
+    });
 }
 
 // ============================================
@@ -336,7 +388,7 @@ function drawDynamicAxes(xPosLimit, xNegLimit, rLimit) {
     scene.add(dynamicGrid);
     // ==========================
 
-    const axisColor = 0x888899;
+    const axisColor = 0xffffff;
     const axisMaterial = new THREE.LineBasicMaterial({ color: axisColor, linewidth: 2 });
 
     // X-axis: from -L_x_neg to L_x_pos
@@ -406,13 +458,18 @@ function createAxisSprite(text, x, y, z) {
 
     ctx.fillStyle = '#ffffff';
     // Use Times New Roman for LaTeX-like appearance
-    ctx.font = 'italic 700 80px "Times New Roman", Times, serif';
+    ctx.font = 'italic 80px "Computer Modern Serif", "Times New Roman", serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(text, 64, 64);
 
     const texture = new THREE.CanvasTexture(canvas);
-    const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: true,    // Allow occlusion by solid objects
+        depthWrite: false   // Don't mess with depth buffer
+    });
     const sprite = new THREE.Sprite(material);
     sprite.position.set(x, y, z);
     sprite.scale.set(0.6, 0.6, 1);
@@ -461,8 +518,20 @@ function animate() {
 function updateSolid() {
     // Get slider values
     // Get input values
-    let a = parseFloat(inputA.value);
-    let b = parseFloat(inputB.value);
+    // Allow math expressions in A and B (e.g. "pi", "sqrt(2)")
+    let valA = inputA.value;
+    let valB = inputB.value;
+
+    // Default to 0 if empty
+    if (!valA.trim()) valA = '0';
+    if (!valB.trim()) valB = '0';
+
+    let a = safeEval(preprocessInput(valA), 0);
+    let b = safeEval(preprocessInput(valB), 0);
+
+    // Fallback if evaluation fails
+    if (isNaN(a)) a = 0;
+    if (isNaN(b)) b = 0;
     const angleDeg = parseInt(sliderAngle.value);
     const angleRad = (angleDeg * Math.PI) / 180;
 
@@ -479,9 +548,33 @@ function updateSolid() {
         xValues.push(a + (b - a) * (i / CONFIG.resolution));
     }
 
-    // Evaluate functions
-    const yOuter = evaluateFunction(inputF.value, xValues);
-    const yInner = evaluateFunction(inputG.value, xValues);
+    // Evaluate Piecewise Functions
+    // User requested: "Upper Group" -> Max (Outer envelope typically)
+    // "Lower Group" -> Min (Inner envelope typically) assuming they are below?
+    // Actually, "Upper" usually means f(x). "Lower" means g(x).
+    // The Radius is |y|.
+    // Let's use 'max' for Upper and 'min' for Lower as per standard envelope logic for now.
+    // User explicitly said: "chọn giá trị lớn nhất (đối với nhóm đường trên)". -> Max.
+    const yOuter = evaluatePiecewise(upperFuncs, xValues, 'max');
+
+    // For lower group, if multiple functions overlap, we usually want the "highest" of the bottoms if we are cutting from below?
+    // Or "lowest"?
+    // Case 2: V-shape bottom. y=|x|. g1=x (x>0), g2=-x (x<0).
+    // At x=0, both 0.
+    // If we have g1=0 and g2=x-1. Max is 0. Min is x-1.
+    // Standard "Lower Boundary" of a region defined by "y >= g(x)" is usually g(x) = max(g1, g2).
+    // Example: y >= 0 AND y >= x-1. Effective g(x) = max(0, x-1).
+    // So BOTH Upper and Lower effective boundaries are MAX of their components (if we define region as y <= f_i and y >= g_i).
+    // Wait. y <= f1 AND y <= f2 -> y <= min(f1, f2). (Ceiling is min of roofs).
+    // y >= g1 AND y >= g2 -> y >= max(g1, g2). (Floor is max of floors).
+    // The user said: "chọn giá trị lớn nhất (đối với nhóm đường trên)".
+    // This contradicts "y <= f1 and y <= f2".
+    // "Max of Upper" implies "y <= f1 OR y <= f2" (Union of regions under curves).
+    // "Min of Upper" implies "Intersection of regions".
+    // I will stick to User's "Max" request for Upper. And likely "Max" for Lower too (Floor logic).
+    // Let's define: Effective F = Max(all f). Effective G = Max(all g).
+    // This allows "Piecewise" easily (since 0 is fallback).
+    const yInner = evaluatePiecewise(lowerFuncs, xValues, 'max'); // Assuming Max for lower too to allow building up shapes.
 
     // Check for NaN/Infinity
     const hasInvalid = yOuter.some(v => !isFinite(v)) || yInner.some(v => !isFinite(v));
@@ -641,61 +734,44 @@ function updateSolid() {
     const currentOpacity = sliderOpacity.value / 100;
     const colorMode = colorModeSelect.value;
     let material;
+    // Fix Transparency Logic: strict opaque if >= 0.99
+    const isTransparent = currentOpacity < 0.99;
+    const depthWrite = !isTransparent; // Write depth only when opaque
 
-    if (colorMode === 'gradient-x' || colorMode === 'gradient-r') {
+    if (colorMode === 'gradient-x') {
         // GRADIENT MODE: Use vertex colors
         const startColor = new THREE.Color(colorStart.value);
         const endColor = new THREE.Color(colorEnd.value);
+
         const colors = [];
-
-        if (colorMode === 'gradient-x') {
-            // Gradient along X axis (from a to b)
-            for (let i = 0; i < positions.length; i += 3) {
-                const x = positions[i];
-                const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
-                const vertexColor = new THREE.Color().lerpColors(startColor, endColor, t);
-                colors.push(vertexColor.r, vertexColor.g, vertexColor.b);
-            }
-        } else {
-            // Gradient radial (from center outward)
-            // Find max radius for normalization
-            let maxRadius = 0;
-            for (let i = 0; i < positions.length; i += 3) {
-                const y = positions[i + 1];
-                const z = positions[i + 2];
-                const r = Math.sqrt(y * y + z * z);
-                if (r > maxRadius) maxRadius = r;
-            }
-            if (maxRadius === 0) maxRadius = 1;
-
-            for (let i = 0; i < positions.length; i += 3) {
-                const y = positions[i + 1];
-                const z = positions[i + 2];
-                const r = Math.sqrt(y * y + z * z);
-                const t = r / maxRadius;  // 0 at center, 1 at edge
-                const vertexColor = new THREE.Color().lerpColors(startColor, endColor, t);
-                colors.push(vertexColor.r, vertexColor.g, vertexColor.b);
-            }
+        // Gradient along X axis (from a to b)
+        for (let i = 0; i < positions.length; i += 3) {
+            const x = positions[i];
+            const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+            const vertexColor = new THREE.Color().lerpColors(startColor, endColor, t);
+            colors.push(vertexColor.r, vertexColor.g, vertexColor.b);
         }
         geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
         material = new THREE.MeshStandardMaterial({
             vertexColors: true,
-            transparent: true,
+            transparent: isTransparent,
             opacity: currentOpacity,
             side: THREE.DoubleSide,
             metalness: 0.1,
             roughness: 0.4,
+            depthWrite: depthWrite
         });
     } else {
         // SOLID MODE: Use single color
         material = new THREE.MeshStandardMaterial({
             color: colorSolid.value,
-            transparent: true,
+            transparent: isTransparent,
             opacity: currentOpacity,
             side: THREE.DoubleSide,
             metalness: 0.1,
             roughness: 0.4,
+            depthWrite: depthWrite
         });
     }
 
@@ -714,32 +790,84 @@ function updateSolid() {
         scene.add(wireframeMesh);
     }
 
-    // ====== CREATE PROFILE LINES ======
-    // f(x) line - on XY plane (z=0, positive Y)
-    const fPoints = [];
-    for (let i = 0; i <= CONFIG.resolution; i++) {
-        fPoints.push(new THREE.Vector3(xValues[i], yOuter[i], 0));  // No abs - show actual curve
-    }
-    const fGeometry = new THREE.BufferGeometry().setFromPoints(fPoints);
-    const fMaterial = new THREE.LineBasicMaterial({
-        color: colorF.value,
-        linewidth: 2,
-    });
-    profileLineF = new THREE.Line(fGeometry, fMaterial);
-    scene.add(profileLineF);
+    // ====== DRAW PROFILE LINES (PIECEWISE) ======
+    // Draw each active function segment with its own color
 
-    // g(x) line - on XY plane (z=0, positive Y)
-    const gPoints = [];
-    for (let i = 0; i <= CONFIG.resolution; i++) {
-        gPoints.push(new THREE.Vector3(xValues[i], yInner[i], 0));  // No abs - show actual curve
+    // Helper to draw a function segment
+    // Helper to draw a function segment
+    function drawFunctionSegment(funcItem, xValues) {
+        // Preprocess just this function
+        const processedExpr = preprocessInput(funcItem.expr);
+        const compiledFunc = (x) => safeEval(processedExpr, x);
+
+        // Filter by range
+        const rStartInput = parseFloat(funcItem.rangeStart !== '' ? safeEval(preprocessInput(funcItem.rangeStart), 0) : -Infinity);
+        const rEndInput = parseFloat(funcItem.rangeEnd !== '' ? safeEval(preprocessInput(funcItem.rangeEnd), 0) : Infinity);
+
+        // Clamp to global bounds [a, b] for drawing
+        const xMinGlobal = Math.min(a, b);
+        const xMaxGlobal = Math.max(a, b);
+        const rStart = Math.max(rStartInput, xMinGlobal);
+        const rEnd = Math.min(rEndInput, xMaxGlobal);
+
+        if (rStart > rEnd) return;
+
+        let points = [];
+
+        // 1. Add sampled points within range
+        for (let i = 0; i < xValues.length; i++) {
+            const x = xValues[i];
+            if (x >= rStart && x <= rEnd) {
+                const y = compiledFunc(x);
+                if (isFinite(y)) {
+                    points.push({ x: x, y: y }); // Store as object first for sorting
+                }
+            }
+        }
+
+        // 2. Explicitly add start and end points to close gaps
+        const yStart = compiledFunc(rStart);
+        if (isFinite(yStart)) points.push({ x: rStart, y: yStart });
+
+        const yEnd = compiledFunc(rEnd);
+        if (isFinite(yEnd)) points.push({ x: rEnd, y: yEnd });
+
+        // 3. Sort by X
+        points.sort((p1, p2) => p1.x - p2.x);
+
+        // 4. Remove duplicates (simple proximity check)
+        const uniquePoints = [];
+        if (points.length > 0) {
+            uniquePoints.push(points[0]);
+            for (let i = 1; i < points.length; i++) {
+                if (Math.abs(points[i].x - points[i - 1].x) > 1e-9) {
+                    uniquePoints.push(points[i]);
+                }
+            }
+        }
+
+        // 5. Create segments (handle internal gaps if any NaN, though filtered above)
+        // Since we filtered isFinite, we assume continuous for now.
+        // If the function itself has a gap (e.g. 1/x), we might get a line across asymptote. 
+        // For piecewise segments usually short and continuous.
+        if (uniquePoints.length < 2) return;
+
+        const vecPoints = uniquePoints.map(p => new THREE.Vector3(p.x, p.y, 0));
+        const geom = new THREE.BufferGeometry().setFromPoints(vecPoints);
+        const mat = new THREE.LineBasicMaterial({
+            color: funcItem.color,
+            linewidth: 2
+        });
+        const line = new THREE.Line(geom, mat);
+        scene.add(line);
+        profileLines.push(line);
     }
-    const gGeometry = new THREE.BufferGeometry().setFromPoints(gPoints);
-    const gMaterial = new THREE.LineBasicMaterial({
-        color: colorG.value,
-        linewidth: 2,
-    });
-    profileLineG = new THREE.Line(gGeometry, gMaterial);
-    scene.add(profileLineG);
+
+    // Draw Upper Functions
+    upperFuncs.forEach(f => drawFunctionSegment(f, xValues));
+
+    // Draw Lower Functions
+    lowerFuncs.forEach(f => drawFunctionSegment(f, xValues));
 
     // ====== DASHED BOUND LINES (on OXY plane) ======
     // Draw vertical dashed lines at x=a and x=b on the Z=0 plane
@@ -805,18 +933,12 @@ function removeSolid() {
         solidMesh.material.dispose();
         solidMesh = null;
     }
-    if (profileLineF) {
-        scene.remove(profileLineF);
-        profileLineF.geometry.dispose();
-        profileLineF.material.dispose();
-        profileLineF = null;
-    }
-    if (profileLineG) {
-        scene.remove(profileLineG);
-        profileLineG.geometry.dispose();
-        profileLineG.material.dispose();
-        profileLineG = null;
-    }
+    profileLines.forEach(line => {
+        scene.remove(line);
+        line.geometry.dispose();
+        line.material.dispose();
+    });
+    profileLines = [];
     if (boundCircleA) {
         scene.remove(boundCircleA);
         boundCircleA.geometry.dispose();
@@ -844,116 +966,183 @@ function showError(show) {
 function updateMeasurements(a, b, angleDeg) {
     const n = 1000;
     const dx = (b - a) / n;
+
+    // Generate x values
+    const xValues = [];
+    for (let i = 0; i <= n; i++) {
+        xValues.push(a + i * dx);
+    }
+
+    // Evaluate using Piecewise logic
+    const yUpper = evaluatePiecewise(upperFuncs, xValues, 'max');
+    const yLower = evaluatePiecewise(lowerFuncs, xValues, 'max');
+
     let volume = 0;
     let area2D = 0;
 
-    const fProcessed = preprocessInput(inputF.value);
-    const gProcessed = preprocessInput(inputG.value);
-
-    // Initial values at x = a (needed for Trapezoidal rule)
-    let f_prev = safeEval(fProcessed, a);
-    let g_prev = safeEval(gProcessed, a);
-    if (!isFinite(f_prev)) f_prev = 0;
-    if (!isFinite(g_prev)) g_prev = 0;
-
     for (let i = 0; i < n; i++) {
-        const x_next = a + (i + 1) * dx;
-        let f_next = safeEval(fProcessed, x_next);
-        let g_next = safeEval(gProcessed, x_next);
-
-        if (!isFinite(f_next)) f_next = 0;
-        if (!isFinite(g_next)) g_next = 0;
-
-        // ====== CROSS-AXIS DETECTION ======
-        // Check if f and g have opposite signs at this segment
-        // Use average of prev and next for the segment
-        const f_avg = (f_prev + f_next) / 2;
-        const g_avg = (g_prev + g_next) / 2;
+        // Use average value for the segment
+        const u_avg = (yUpper[i] + yUpper[i + 1]) / 2;
+        const l_avg = (yLower[i] + yLower[i + 1]) / 2;
 
         let rOuter, rInner;
 
-        if (f_avg * g_avg < 0) {
-            // Opposite signs: region spans the rotation axis
-            // The solid is a full disc (no hole)
-            rOuter = Math.max(Math.abs(f_avg), Math.abs(g_avg));
+        if (u_avg * l_avg < 0) {
+            // Opposite signs: region spans axis -> solid disc
+            rOuter = Math.max(Math.abs(u_avg), Math.abs(l_avg));
             rInner = 0;
         } else {
-            // Same sign: use washer method
-            const rf = Math.abs(f_avg);
-            const rg = Math.abs(g_avg);
-            rOuter = Math.max(rf, rg);
-            rInner = Math.min(rf, rg);
+            // Same sign: washer
+            const r1 = Math.abs(u_avg);
+            const r2 = Math.abs(l_avg);
+            rOuter = Math.max(r1, r2);
+            rInner = Math.min(r1, r2);
         }
 
-        // Volume (using segment averages)
         volume += (rOuter * rOuter - rInner * rInner) * dx;
-
-        // 2D Area: ∫ |f(x) - g(x)| dx (actual signed difference, not absolute radii)
-        const h_prev = Math.abs(f_prev - g_prev);
-        const h_next = Math.abs(f_next - g_next);
-        area2D += (h_prev + h_next) / 2 * dx;
-
-        f_prev = f_next;
-        g_prev = g_next;
+        area2D += Math.abs(u_avg - l_avg) * dx;
     }
 
     // Volume depends on Angle
     const ratio = angleDeg / 360;
     volume = Math.abs(Math.PI * volume * ratio);
 
-    // Area is 2D region, independent of rotation angle?
-    // User requested "Diện tích sinh ra bởi hai đường cong".
-    // Usually this means the area of the shape itself.
-    // If they meant rotation, they would say "Surface Area".
-    // We assume 2D Area of the region.
-
     // Update UI
     if (volumeValue) volumeValue.textContent = volume.toFixed(2);
-
-    const areaValue = document.getElementById('area-value');
-    if (areaValue) areaValue.textContent = area2D.toFixed(2);
+    const areaValueElem = document.getElementById('area-value');
+    if (areaValueElem) areaValueElem.textContent = area2D.toFixed(2);
 
     // Hide formula
-    const volumeFormula = document.getElementById('volume-formula');
-    if (volumeFormula) volumeFormula.parentElement.style.display = 'none';
-
-    const infoSection = document.querySelector('.info-section');
-    if (infoSection) {
-        // Ensure styling is consistent
-    }
+    const volFormulaElem = document.getElementById('volume-formula');
+    if (volFormulaElem) volFormulaElem.parentElement.style.display = 'none';
 }
 
+
+// ============================================
+// DYNAMIC UI LOGIC
+// ============================================
+
+function renderFunctionList(type) {
+    const isUpper = type === 'upper';
+    const list = isUpper ? upperFuncs : lowerFuncs;
+    const container = isUpper ? upperFuncsContainer : lowerFuncsContainer;
+    container.innerHTML = '';
+
+    list.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'func-item';
+        div.innerHTML = `
+            <div class="func-item-row">
+                <div class="color-pickers">
+                    <input type="color" value="${item.color}" id="color-${type}-${index}">
+                </div>
+                <input type="text" value="${item.expr}" id="input-${type}-${index}" placeholder="Nhập hàm số (ví dụ: x+1)">
+                <button class="btn-remove" data-type="${type}" data-index="${index}" title="Xóa">×</button>
+            </div>
+            <div class="func-item-row range-row">
+                <span>Từ x =</span>
+                <input type="text" value="${item.rangeStart}" id="start-${type}-${index}" placeholder="-∞">
+                <span>đến</span>
+                <input type="text" value="${item.rangeEnd}" id="end-${type}-${index}" placeholder="+∞">
+            </div>
+        `;
+        container.appendChild(div);
+
+        // Event Listeners
+        const colorInput = div.querySelector(`#color-${type}-${index}`);
+        const exprInput = div.querySelector(`#input-${type}-${index}`);
+        const startInput = div.querySelector(`#start-${type}-${index}`);
+        const endInput = div.querySelector(`#end-${type}-${index}`);
+        const removeBtn = div.querySelector('.btn-remove');
+
+        // Update Model on Change
+        const updateModel = () => {
+            item.color = colorInput.value;
+            item.expr = exprInput.value;
+            item.rangeStart = startInput.value;
+            item.rangeEnd = endInput.value;
+            // Debounce or immediate update? Immediate for now.
+        };
+
+        // Inputs trigger update on change
+        [colorInput, startInput, endInput].forEach(inp => {
+            inp.addEventListener('input', () => { // Use input for live color/text
+                updateModel();
+                updateSolid();
+            });
+        });
+
+        // Expression input: update on change (Enter/Blur) to avoid heavy parse on every key
+        exprInput.addEventListener('change', () => {
+            updateModel();
+            updateSolid();
+        });
+        // Also support Enter key
+        exprInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                updateModel();
+                updateSolid();
+            }
+        });
+
+        // Remove Button
+        removeBtn.addEventListener('click', () => {
+            if (list.length > 1) {
+                list.splice(index, 1);
+                renderFunctionList(type);
+                updateSolid();
+            } else {
+                // Don't allow deleting the last one? Or allow and show 0?
+                // Let's allow deleting but ensure at least 0 is rendered if empty?
+                // For now, prevent deleting last one to keep UI simple.
+                alert('Cần ít nhất một hàm!');
+            }
+        });
+    });
+}
+
+function addNewFunction(type) {
+    const list = type === 'upper' ? upperFuncs : lowerFuncs;
+    const newColor = '#' + Math.floor(Math.random() * 16777215).toString(16);
+    list.push({ id: Date.now().toString(), expr: '0', color: newColor, rangeStart: '', rangeEnd: '' });
+    renderFunctionList(type);
+    updateSolid();
+}
 
 // ============================================
 // EVENT LISTENERS
 // ============================================
 
 function setupEventListeners() {
-    inputF.addEventListener('input', () => renderLatexPreview(inputF.value, previewF));
-    inputG.addEventListener('input', () => renderLatexPreview(inputG.value, previewG));
+    // Helper to update solid from global inputs
+    const globalUpdate = () => updateSolid();
 
-    inputF.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') updateSolid();
-    });
-    inputG.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') updateSolid();
-    });
+    inputA.addEventListener('change', globalUpdate);
+    inputB.addEventListener('change', globalUpdate);
+    sliderAngle.addEventListener('input', globalUpdate);
 
-    inputA.addEventListener('input', updateSolid);
-    inputB.addEventListener('input', updateSolid);
-    sliderAngle.addEventListener('input', updateSolid);
-
-    // Opacity slider
+    // Opacity
+    // Opacity
     sliderOpacity.addEventListener('input', () => {
         const opacity = sliderOpacity.value / 100;
         valueOpacity.textContent = opacity.toFixed(2);
         if (solidMesh) {
             solidMesh.material.opacity = opacity;
+            solidMesh.visible = opacity > 0;
+
+            // Toggle Transparency Mode dynamically
+            const isTransparent = opacity < 0.99;
+            if (solidMesh.material.transparent !== isTransparent) {
+                solidMesh.material.transparent = isTransparent;
+                solidMesh.material.depthWrite = !isTransparent;
+                solidMesh.material.needsUpdate = true;
+            }
         }
     });
 
-    // Color mode dropdown
-    colorModeSelect.addEventListener('change', () => {
+    // Color Mode
+    // Color Mode
+    const toggleColorModes = () => {
         const mode = colorModeSelect.value;
         if (mode === 'solid') {
             colorSolid.classList.remove('hidden');
@@ -965,73 +1154,181 @@ function setupEventListeners() {
             colorEnd.classList.remove('hidden');
         }
         updateSolid();
-    });
+    };
 
-    // Solid color picker - live update
-    colorSolid.addEventListener('input', () => {
-        if (solidMesh && colorModeSelect.value === 'solid') {
-            solidMesh.material.color.set(colorSolid.value);
-        }
-    });
-
-    // Gradient color pickers - need full re-render for vertex colors
+    colorModeSelect.addEventListener('change', toggleColorModes);
+    colorSolid.addEventListener('input', updateSolid);
     colorStart.addEventListener('input', updateSolid);
     colorEnd.addEventListener('input', updateSolid);
 
-    // Mesh toggle
-    toggleWireframe.addEventListener('change', updateSolid);
+    // Initial call to set correct state
+    toggleColorModes();
 
-    // Color picker - f(x) line
-    colorF.addEventListener('input', () => {
-        if (profileLineF) {
-            profileLineF.material.color.set(colorF.value);
+    // Share Button Logic
+    document.getElementById('btn-share').addEventListener('click', () => {
+        const state = {
+            upper: upperFuncs,
+            lower: lowerFuncs,
+            bounds: { a: inputA.value, b: inputB.value },
+            visuals: {
+                angle: sliderAngle.value,
+                opacity: sliderOpacity.value,
+                mode: colorModeSelect.value,
+                autoRotate: controls.autoRotate, // Save auto rotate state
+                colors: {
+                    solid: colorSolid.value,
+                    start: colorStart.value,
+                    end: colorEnd.value
+                }
+            }
+        };
+
+        try {
+            const json = JSON.stringify(state);
+            const b64 = btoa(encodeURIComponent(json).replace(/%([0-9A-F]{2})/g,
+                function toSolidBytes(match, p1) {
+                    return String.fromCharCode('0x' + p1);
+                }));
+
+            const url = `${window.location.origin}${window.location.pathname}#${b64}`;
+            navigator.clipboard.writeText(url).then(() => {
+                showToast();
+            });
+        } catch (e) {
+            console.error('Serialization Failed', e);
+            alert('Lỗi tạo link chia sẻ!');
         }
     });
 
-    // Color picker - g(x) line
-    colorG.addEventListener('input', () => {
-        if (profileLineG) {
-            profileLineG.material.color.set(colorG.value);
+    // Check for Shared State on Load
+    if (window.location.hash) {
+        try {
+            const b64 = window.location.hash.substring(1);
+            const json = decodeURIComponent(atob(b64).split('').map(function (c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+
+            const state = JSON.parse(json);
+            restoreState(state);
+        } catch (e) {
+            console.error('Deserialization Failed', e);
+            // Non-blocking, just ignore invalid hash
         }
-    });
+    } else {
+        // Initial Data Default
+        renderFunctionList('upper');
+        renderFunctionList('lower');
+        updateSolid();
 
-    // Color picker - bounds (requires re-render)
-    colorBounds.addEventListener('input', updateSolid);
 
-    // Save Image
-    const btnSaveImage = document.getElementById('btn-save-image');
-    if (btnSaveImage) {
-        btnSaveImage.addEventListener('click', () => {
-            // Render specifically for the screenshot to ensure buffer is populated
-            renderer.render(scene, camera);
+        // Wireframe
+        toggleWireframe.addEventListener('change', updateSolid);
 
-            // Capture data URL
-            const dataURL = renderer.domElement.toDataURL('image/png');
+        // Auto Rotate
+        const toggleRotate = document.getElementById('toggle-rotate');
+        if (toggleRotate) {
+            toggleRotate.addEventListener('change', () => {
+                controls.autoRotate = toggleRotate.checked;
+                controls.autoRotateSpeed = 2.0; // Adjust speed as needed
+            });
+        }
 
-            // Create download link
-            const link = document.createElement('a');
-            link.download = 'solid-of-revolution.png';
-            link.href = dataURL;
-            link.click();
-        });
+        // Save Image
+        const btnSaveImage = document.getElementById('btn-save-image');
+        if (btnSaveImage) {
+            btnSaveImage.addEventListener('click', () => {
+                renderer.render(scene, camera);
+                const dataURL = renderer.domElement.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.download = 'solid-of-revolution.png';
+                link.href = dataURL;
+                link.click();
+            });
+        }
     }
+
+    // Dynamic List Buttons
+    btnAddUpper.addEventListener('click', () => addNewFunction('upper'));
+    btnAddLower.addEventListener('click', () => addNewFunction('lower'));
 }
 
 // ============================================
 // INITIALIZATION
 // ============================================
 
-function init() {
+try {
     initThreeJS();
     setupEventListeners();
 
-    // Initial previews
-    renderLatexPreview(inputF.value, previewF);
-    renderLatexPreview(inputG.value, previewG);
+    // Initial Data
+    renderFunctionList('upper');
+    renderFunctionList('lower');
 
-    // Initial solid
+    // Initial Draw
+    updateSolid();
+} catch (error) {
+    console.error("App Initialization Error:", error);
+    alert("Lỗi khởi chạy ứng dụng: " + error.message + "\nVui lòng F5 lại hoặc kiểm tra Console.");
+}
+
+function showToast() {
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
+function restoreState(state) {
+    if (!state) return;
+
+    // Functions
+    upperFuncs.length = 0;
+    if (state.upper) state.upper.forEach(f => upperFuncs.push(f));
+
+    lowerFuncs.length = 0;
+    if (state.lower) state.lower.forEach(f => lowerFuncs.push(f));
+
+    // Bounds
+    if (state.bounds) {
+        inputA.value = state.bounds.a;
+        inputB.value = state.bounds.b;
+    }
+
+    // Visuals
+    if (state.visuals) {
+        sliderAngle.value = state.visuals.angle || 360;
+        valueAngle.textContent = sliderAngle.value + '°';
+
+        sliderOpacity.value = state.visuals.opacity || 75;
+        const opVal = sliderOpacity.value / 100;
+        valueOpacity.textContent = opVal.toFixed(2);
+
+        colorModeSelect.value = state.visuals.mode || 'gradient-x';
+
+        // Auto Rotate
+        if (state.visuals.autoRotate !== undefined) {
+            controls.autoRotate = state.visuals.autoRotate;
+            const toggleRotate = document.getElementById('toggle-rotate');
+            if (toggleRotate) toggleRotate.checked = state.visuals.autoRotate;
+        }
+
+        if (state.visuals.colors) {
+            colorSolid.value = state.visuals.colors.solid || '#4ECDC4';
+            colorStart.value = state.visuals.colors.start || '#FF9A9E';
+            colorEnd.value = state.visuals.colors.end || '#4ECDC4';
+        }
+    }
+
+    // UI Update triggers
+    renderFunctionList('upper');
+    renderFunctionList('lower');
+
+    // Force event trigger for color mode UI update
+    const event = new Event('change');
+    colorModeSelect.dispatchEvent(event);
+
     updateSolid();
 }
 
-// Start
-init();
+
