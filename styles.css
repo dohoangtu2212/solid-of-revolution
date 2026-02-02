@@ -705,6 +705,14 @@ input[type="range"]::-webkit-slider-thumb {
     text-align: center;
 }
 
+.range-value {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 700;
+    color: #fff;
+    min-width: 3rem;
+    text-align: right;
+}
+
 /* --- Header Controls --- */
 .header-controls {
     display: flex;
@@ -835,4 +843,55 @@ input[type="range"]::-webkit-slider-thumb {
         max-height: 50vh;
         border-right: none;
     }
+}
+
+.input-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    /* Ensure it takes full width of flex item */
+    min-width: 0;
+    /* Fix flex overflow */
+}
+
+.func-item-row.top-row {
+    align-items: flex-start;
+    /* Align color picker to top */
+    gap: 10px;
+}
+
+.func-item-row.top-row .color-pickers {
+    margin-top: 4px;
+    /* Slight adjust to align with input text */
+}
+
+/* --- Inline Latex Preview --- */
+.latex-mini {
+    min-height: 24px;
+    font-size: 1.1rem;
+    color: #ffffff;
+    /* Default white text */
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin-top: 4px;
+    margin-bottom: 0;
+    margin-left: 0;
+    /* Reset manual offset */
+    text-align: left;
+    overflow-x: auto;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.latex-mini:empty {
+    display: none;
+}
+
+.latex-mini .katex {
+    font-size: 1.1em;
+    font-family: 'KaTeX_Main', 'Times New Roman', serif;
 }

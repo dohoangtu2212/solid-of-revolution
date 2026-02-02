@@ -42,6 +42,7 @@ const sliderOpacity = document.getElementById('slider-opacity');
 const colorModeSelect = document.getElementById('color-mode-select');
 const colorSolid = document.getElementById('color-solid');
 const colorStart = document.getElementById('color-start');
+const colorMid = document.getElementById('color-mid');
 const colorEnd = document.getElementById('color-end');
 const toggleWireframe = document.getElementById('toggle-wireframe');
 const colorBounds = document.getElementById('color-bounds');
@@ -61,10 +62,10 @@ const btnAddLower = document.getElementById('btn-add-lower');
 // State for Multiple Functions
 // Each item: { id: string, expr: string, color: string, rangeStart: string, rangeEnd: string, preview: element }
 let upperFuncs = [
-    { id: 'f1', expr: 'x+3', color: '#ff6b6b', rangeStart: '', rangeEnd: '' }
+    { id: 'f1', expr: '-x+3', color: '#ff6b6b', rangeStart: '', rangeEnd: '' }
 ];
 let lowerFuncs = [
-    { id: 'g1', expr: '-sqrt(x+3)', color: '#51cf66', rangeStart: '', rangeEnd: '' }
+    { id: 'g1', expr: '-sqrt(-x+3)', color: '#51cf66', rangeStart: '', rangeEnd: '' }
 ];
 
 // ============================================
@@ -741,6 +742,7 @@ function updateSolid() {
     if (colorMode === 'gradient-x') {
         // GRADIENT MODE: Use vertex colors
         const startColor = new THREE.Color(colorStart.value);
+        const midColor = new THREE.Color(colorMid.value);
         const endColor = new THREE.Color(colorEnd.value);
 
         const colors = [];
@@ -748,7 +750,18 @@ function updateSolid() {
         for (let i = 0; i < positions.length; i += 3) {
             const x = positions[i];
             const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
-            const vertexColor = new THREE.Color().lerpColors(startColor, endColor, t);
+            let vertexColor;
+
+            // 3-Color Interpolation
+            if (t < 0.5) {
+                // First half: Start -> Mid
+                const localT = t * 2; // 0..0.5 -> 0..1
+                vertexColor = new THREE.Color().lerpColors(startColor, midColor, localT);
+            } else {
+                // Second half: Mid -> End
+                const localT = (t - 0.5) * 2; // 0.5..1 -> 0..1
+                vertexColor = new THREE.Color().lerpColors(midColor, endColor, localT);
+            }
             colors.push(vertexColor.r, vertexColor.g, vertexColor.b);
         }
         geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
@@ -1032,13 +1045,20 @@ function renderFunctionList(type) {
         const div = document.createElement('div');
         div.className = 'func-item';
         div.innerHTML = `
-            <div class="func-item-row">
+            <div class="func-item-row top-row">
                 <div class="color-pickers">
                     <input type="color" value="${item.color}" id="color-${type}-${index}">
                 </div>
-                <input type="text" value="${item.expr}" id="input-${type}-${index}" placeholder="Nhập hàm số (ví dụ: x+1)">
+                
+                <div class="input-col">
+                     <input type="text" value="${item.expr}" id="input-${type}-${index}" placeholder="Nhập hàm số (ví dụ: x+1)">
+                     <!-- INLINE PREVIEW -->
+                     <div class="latex-mini" id="preview-${type}-${index}"></div>
+                </div>
+
                 <button class="btn-remove" data-type="${type}" data-index="${index}" title="Xóa">×</button>
             </div>
+            
             <div class="func-item-row range-row">
                 <span>Từ x =</span>
                 <input type="text" value="${item.rangeStart}" id="start-${type}-${index}" placeholder="-∞">
@@ -1054,6 +1074,7 @@ function renderFunctionList(type) {
         const startInput = div.querySelector(`#start-${type}-${index}`);
         const endInput = div.querySelector(`#end-${type}-${index}`);
         const removeBtn = div.querySelector('.btn-remove');
+        const previewEl = div.querySelector(`#preview-${type}-${index}`);
 
         // Update Model on Change
         const updateModel = () => {
@@ -1064,6 +1085,13 @@ function renderFunctionList(type) {
             // Debounce or immediate update? Immediate for now.
         };
 
+        const updatePreview = () => {
+            renderLatexPreview(exprInput.value, previewEl);
+        };
+
+        // Initial preview
+        updatePreview();
+
         // Inputs trigger update on change
         [colorInput, startInput, endInput].forEach(inp => {
             inp.addEventListener('input', () => { // Use input for live color/text
@@ -1073,6 +1101,11 @@ function renderFunctionList(type) {
         });
 
         // Expression input: update on change (Enter/Blur) to avoid heavy parse on every key
+        // BUT update preview on input for responsiveness
+        exprInput.addEventListener('input', () => {
+            updatePreview();
+        });
+
         exprInput.addEventListener('change', () => {
             updateModel();
             updateSolid();
@@ -1141,16 +1174,21 @@ function setupEventListeners() {
     });
 
     // Color Mode
+
+    // ... (existing code)
+
     // Color Mode
     const toggleColorModes = () => {
         const mode = colorModeSelect.value;
         if (mode === 'solid') {
             colorSolid.classList.remove('hidden');
             colorStart.classList.add('hidden');
+            colorMid.classList.add('hidden');
             colorEnd.classList.add('hidden');
         } else {
             colorSolid.classList.add('hidden');
             colorStart.classList.remove('hidden');
+            colorMid.classList.remove('hidden');
             colorEnd.classList.remove('hidden');
         }
         updateSolid();
@@ -1159,6 +1197,7 @@ function setupEventListeners() {
     colorModeSelect.addEventListener('change', toggleColorModes);
     colorSolid.addEventListener('input', updateSolid);
     colorStart.addEventListener('input', updateSolid);
+    colorMid.addEventListener('input', updateSolid);
     colorEnd.addEventListener('input', updateSolid);
 
     // Initial call to set correct state
@@ -1178,6 +1217,7 @@ function setupEventListeners() {
                 colors: {
                     solid: colorSolid.value,
                     start: colorStart.value,
+                    mid: colorMid.value,
                     end: colorEnd.value
                 }
             }
@@ -1316,6 +1356,7 @@ function restoreState(state) {
         if (state.visuals.colors) {
             colorSolid.value = state.visuals.colors.solid || '#4ECDC4';
             colorStart.value = state.visuals.colors.start || '#FF9A9E';
+            colorMid.value = state.visuals.colors.mid || '#a18cd1';
             colorEnd.value = state.visuals.colors.end || '#4ECDC4';
         }
     }

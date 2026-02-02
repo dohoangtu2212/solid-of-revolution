@@ -74,11 +74,11 @@
                 <div class="bounds-row">
                     <div class="input-bound">
                         <label for="input-a">Cận a</label>
-                        <input type="text" id="input-a" value="-3" placeholder="-∞">
+                        <input type="text" id="input-a" value="-1" placeholder="-∞">
                     </div>
                     <div class="input-bound">
                         <label for="input-b">Cận b</label>
-                        <input type="text" id="input-b" value="1" placeholder="+∞">
+                        <input type="text" id="input-b" value="3" placeholder="+∞">
                     </div>
                 </div>
 
@@ -95,9 +95,9 @@
                 <div class="slider-group">
                     <label>
                         <span>Độ trong suốt:</span>
-                        <span id="value-opacity" class="slider-value">0.75</span>
+                        <span id="value-opacity" class="slider-value">0.50</span>
                     </label>
-                    <input type="range" id="slider-opacity" min="0" max="100" value="75" step="1">
+                    <input type="range" id="slider-opacity" min="0" max="100" value="50" step="1">
                 </div>
 
                 <!-- Color Mode with Dropdown -->
@@ -110,8 +110,9 @@
                         </select>
                         <div class="color-pickers" id="color-pickers">
                             <input type="color" id="color-solid" value="#4ECDC4" class="hidden" title="Màu khối">
-                            <input type="color" id="color-start" value="#FF9A9E" title="Màu 1">
-                            <input type="color" id="color-end" value="#4ECDC4" title="Màu 2">
+                            <input type="color" id="color-start" value="#FF9A9E" title="Màu đầu">
+                            <input type="color" id="color-mid" value="#a18cd1" class="hidden" title="Màu giữa">
+                            <input type="color" id="color-end" value="#4ECDC4" title="Màu cuối">
                         </div>
                     </div>
                 </div>
