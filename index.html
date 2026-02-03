@@ -30,134 +30,191 @@
 
 <body>
     <div class="app-container">
-        <!-- Control Panel (Left Side) -->
-        <aside class="control-panel">
-            <header class="panel-header">
-                <div class="logo-row">
-                    <img src="owl-logo.png" alt="WISDEMY" class="owl-logo">
-                    <h1>WISDEMY</h1>
-                </div>
-                <p class="subtitle">Khối tròn xoay</p>
-            </header>
-
-            <div class="control-section">
-                <!-- Upper Functions Group -->
-                <div class="func-group-header">
-                    <span class="section-label">Hàm đường trên (Upper Limit)</span>
-                    <button id="btn-add-upper" class="btn-icon" title="Thêm hàm">+</button>
-                </div>
-                <div id="upper-funcs-list" class="func-list">
-                    <!-- Dynamic Items will be injected here -->
-                </div>
-
-                <!-- Lower Functions Group -->
-                <div class="func-group-header mt-4">
-                    <span class="section-label">Hàm đường dưới (Lower Limit)</span>
-                    <button id="btn-add-lower" class="btn-icon" title="Thêm hàm">+</button>
-                </div>
-                <div id="lower-funcs-list" class="func-list">
-                    <!-- Dynamic Items will be injected here -->
-                </div>
-
-
-            </div>
-
-            <div class="control-section">
-                <!-- Bounds Section Header with Color Picker -->
-                <div class="section-title-row">
-                    <span class="section-label">Miền tích phân [a, b]</span>
-                    <div class="color-wrapper" title="Màu giới hạn">
-                        <input type="color" id="color-bounds" value="#ffd43b">
+        <!-- Control Panel Wrapper (Handles Layout & Button Visibility) -->
+        <div id="panel-wrapper" class="panel-wrapper">
+            <aside class="control-panel">
+                <header class="panel-header">
+                    <div class="logo-row">
+                        <img src="owl-logo.png" alt="WISDEMY" class="owl-logo">
+                        <h1>WISDEMY</h1>
                     </div>
-                </div>
+                    <p class="subtitle">Khối tròn xoay</p>
+                </header>
 
-                <div class="bounds-row">
-                    <div class="input-bound">
-                        <label for="input-a">Cận a</label>
-                        <input type="text" id="input-a" value="-1" placeholder="-∞">
+                <div class="control-section">
+                    <!-- Upper Functions Group -->
+                    <div class="func-group-header">
+                        <span class="section-label">HÀM ĐƯỜNG TRÊN</span>
+                        <button id="btn-add-upper" class="btn-icon" title="Thêm hàm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                        </button>
                     </div>
-                    <div class="input-bound">
-                        <label for="input-b">Cận b</label>
-                        <input type="text" id="input-b" value="3" placeholder="+∞">
+                    <div id="upper-funcs-list" class="func-list">
+                        <!-- Dynamic Items will be injected here -->
                     </div>
-                </div>
 
-                <!-- Slider Angle -->
-                <div class="slider-group">
-                    <div class="slider-header"
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span style="font-weight: 600;">Góc quay:</span>
-                            <button id="btn-sweep" class="icon-btn-small" title="Chạy mô phỏng vòng lặp"
-                                style="background: none; border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer; border-radius: 4px; padding: 0px 6px; font-size: 0.8rem; line-height: 1.5;">▶</button>
-                        </div>
-                        <span id="value-angle" class="slider-value">360°</span>
+                    <!-- Lower Functions Group -->
+                    <div class="func-group-header">
+                        <span class="section-label">HÀM ĐƯỜNG DƯỚI</span>
+                        <button id="btn-add-lower" class="btn-icon" title="Thêm hàm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19" />
+                                <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                        </button>
                     </div>
-                    <input type="range" id="slider-angle" min="0" max="360" value="360" step="1">
-                </div>
+                    <div id="lower-funcs-list" class="func-list">
+                        <!-- Dynamic Items will be injected here -->
+                    </div>
 
-                <!-- Slider Opacity -->
-                <div class="slider-group">
-                    <label>
-                        <span>Độ trong suốt:</span>
-                        <span id="value-opacity" class="slider-value">0.50</span>
-                    </label>
-                    <input type="range" id="slider-opacity" min="0" max="100" value="50" step="1">
-                </div>
+                    <!-- Bounds Section (Boxed Style) -->
+                    <div class="func-group-header">
+                        <span class="section-label">CẬN TÍCH PHÂN</span>
+                    </div>
 
-                <!-- Color Mode with Dropdown -->
-                <div class="color-settings-row">
-                    <label for="color-mode-select">Chế độ màu:</label>
-                    <div class="color-inputs-container">
-                        <select id="color-mode-select">
-                            <option value="solid">Một màu (Solid)</option>
-                            <option value="gradient-x" selected>Gradient</option>
-                        </select>
-                        <div class="color-pickers" id="color-pickers">
-                            <input type="color" id="color-solid" value="#4ECDC4" class="hidden" title="Màu khối">
-                            <input type="color" id="color-start" value="#FF4E50" title="Màu đầu">
-                            <input type="color" id="color-mid" value="#F9D423" class="hidden" title="Màu giữa">
-                            <input type="color" id="color-end" value="#00C9FF" title="Màu cuối">
+                    <div class="func-item">
+                        <div style="display: flex; align-items: flex-start; gap: 12px;">
+                            <!-- Color Picker (Left) -->
+                            <div class="color-wrapper" title="Màu giới hạn" style="margin-top: 22px;">
+                                <input type="color" id="color-bounds" value="#ffd43b">
+                            </div>
+
+                            <!-- Inputs (Right) -->
+                            <div class="bounds-row" style="margin-bottom: 0; flex: 1;">
+                                <div class="input-bound">
+                                    <label for="input-a">Cận a</label>
+                                    <input type="text" id="input-a" value="-1" placeholder="-∞">
+                                </div>
+                                <div class="input-bound">
+                                    <label for="input-b">Cận b</label>
+                                    <input type="text" id="input-b" value="3" placeholder="+∞">
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <!-- Display Config Section (Boxed Style) -->
+                    <div class="func-group-header">
+                        <span class="section-label">CẤU HÌNH HIỂN THỊ</span>
+                    </div>
+
+                    <div class="func-item" style="padding: 16px;">
+                        <!-- Render Mode -->
+                        <div class="horizontal-group">
+                            <label for="render-mode" class="control-label">Kiểu hiển thị:</label>
+                            <select id="render-mode">
+                                <option value="smooth" selected>Mịn (Smooth)</option>
+                                <option value="disks">Cắt Lát (Disks)</option>
+                            </select>
+                        </div>
+
+                        <!-- Disk Count Slider (Hidden by default) -->
+                        <div class="slider-group" id="disk-count-group" style="display: none;">
+                            <label style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span class="control-label">Số đĩa (n):</span>
+                                <span id="value-disk-count" class="slider-value">20</span>
+                            </label>
+                            <input type="range" id="slider-disk-count" min="2" max="100" value="20" step="1">
+                        </div>
+
+                        <!-- Color Mode with Dropdown -->
+                        <div class="horizontal-group" style="align-items: flex-start;">
+                            <label for="color-mode-select" style="margin-top: 12px;" class="control-label">Chế độ
+                                màu:</label>
+                            <div
+                                style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end; width: 100%;">
+                                <select id="color-mode-select" style="width: 140px;">
+                                    <option value="solid">Một màu</option>
+                                    <option value="gradient-x" selected>Gradient</option>
+                                </select>
+                                <div class="color-pickers" id="color-pickers">
+                                    <input type="color" id="color-solid" value="#4ECDC4" class="hidden"
+                                        title="Màu khối">
+                                    <input type="color" id="color-start" value="#FF4E50" title="Màu đầu">
+                                    <input type="color" id="color-mid" value="#F9D423" class="hidden" title="Màu giữa">
+                                    <input type="color" id="color-end" value="#00C9FF" title="Màu cuối">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slider Angle -->
+                        <div class="slider-group">
+                            <div class="slider-header"
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span class="control-label">Góc quay:</span>
+                                    <button id="btn-sweep" class="icon-btn-small" title="Chạy mô phỏng vòng lặp"
+                                        style="background: none; border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer; border-radius: 4px; padding: 0px 6px; font-size: 0.8rem; line-height: 1.5;">▶</button>
+                                </div>
+                                <span id="value-angle" class="slider-value">360°</span>
+                            </div>
+                            <input type="range" id="slider-angle" min="0" max="360" value="360" step="1">
+                        </div>
+
+                        <!-- Slider Opacity -->
+                        <div class="slider-group">
+                            <div class="slider-header"
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                <label class="control-label">Độ trong suốt:</label>
+                                <span id="value-opacity" class="slider-value">0.75</span>
+                            </div>
+                            <input type="range" id="slider-opacity" min="0" max="100" value="75">
+                        </div>
+
+                        <!-- Mesh Toggle -->
+                        <div class="input-group toggle-row">
+                            <label class="control-label">Hiển thị lưới:</label>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-wireframe">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+
+                        <!-- Auto Rotate Toggle -->
+                        <div class="input-group toggle-row" style="margin-bottom: 0;">
+                            <!-- Remove bottom margin for last item -->
+                            <label class="control-label">Tự động xoay:</label>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-rotate">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Mesh Toggle -->
-                <div class="input-group toggle-row">
-                    <label>Hiển thị Mesh:</label>
-                    <label class="switch">
-                        <input type="checkbox" id="toggle-wireframe">
-                        <span class="switch-slider"></span>
-                    </label>
+                <div class="control-section info-section decorated-panel">
+                    <div class="result-item">
+                        <span class="result-label">Diện tích S</span>
+                        <span id="area-value" class="result-number">--</span>
+                    </div>
+                    <div class="result-item highlight">
+                        <span class="result-label">Thể tích V</span>
+                        <span id="volume-value" class="result-number">--</span>
+                    </div>
                 </div>
 
-                <!-- Auto Rotate Toggle -->
-                <div class="input-group toggle-row">
-                    <label>Tự động xoay:</label>
-                    <label class="switch">
-                        <input type="checkbox" id="toggle-rotate">
-                        <span class="switch-slider"></span>
-                    </label>
-                </div>
-            </div>
+                <footer class="panel-footer">
+                    <button id="btn-share" class="btn-save">🔗 Chia sẻ Link</button>
+                    <button id="btn-save-image" class="btn-save">📸 Lưu ảnh PNG</button>
+                    <p class="footer-hint">Xoay để xem 3D • Cuộn để phóng to</p>
+                </footer>
+            </aside>
 
-            <div class="control-section info-section decorated-panel">
-                <div class="result-item">
-                    <span class="result-label">Diện tích S</span>
-                    <span id="area-value" class="result-number">--</span>
-                </div>
-                <div class="result-item highlight">
-                    <span class="result-label">Thể tích V</span>
-                    <span id="volume-value" class="result-number">--</span>
-                </div>
-            </div>
-
-            <footer class="panel-footer">
-                <button id="btn-share" class="btn-save">🔗 Chia sẻ Link</button>
-                <button id="btn-save-image" class="btn-save">📸 Lưu ảnh PNG</button>
-                <p class="footer-hint">Xoay để xem 3D • Cuộn để phóng to</p>
-            </footer>
-        </aside>
+            <!-- Sidebar Toggle Button (Moved outside panel to avoid clipping) -->
+            <button id="sidebar-toggle" class="sidebar-toggle" title="Thu gọn/Mở rộng">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
+        </div>
 
         <!-- 3D Canvas (Right Side) -->
         <main class="canvas-container">

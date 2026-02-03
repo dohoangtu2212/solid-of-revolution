@@ -5,6 +5,7 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 
 console.log('App.js Loaded - Version Piecewise - Trigger 2');
 
@@ -336,8 +337,28 @@ function initThreeJS() {
     // const gridHelper = new THREE.GridHelper(10, 20, 0x333355, 0x222244);
     // ... removed static grid code
 
-    // Handle resize
-    window.addEventListener('resize', onWindowResize);
+    // Handle resize with Platinum Sync (Smooth aspect + Debounced resolution)
+    let resizeTimeout;
+    const resizeObserver = new ResizeObserver(entries => {
+        if (!entries.length) return;
+        const width = canvasContainer.clientWidth;
+        const height = canvasContainer.clientHeight;
+
+        // 1. Instant Aspect Sync (Flicker-free & No distortion)
+        if (camera) {
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        }
+
+        // 2. Debounced Resolution Snap (Prevents buffer-clearing flickering)
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            renderer.setSize(width, height, false);
+            // Force immediate render to prevent 1-frame gap
+            if (scene && camera) renderer.render(scene, camera);
+        }, 100);
+    });
+    resizeObserver.observe(canvasContainer);
 
     // Animation loop
     animate();
@@ -498,13 +519,8 @@ function createTextSprite(text, x, y, z) {
     scene.add(sprite);
 }
 
-function onWindowResize() {
-    const width = canvasContainer.clientWidth;
-    const height = canvasContainer.clientHeight;
-    camera.aspect = width / height;
-    camera.updateProjectionMatrix();
-    renderer.setSize(width, height);
-}
+// onWindowResize removed in favor of ResizeObserver in initThreeJS
+
 
 let isResettingCamera = false;
 let isSweeping = false;
@@ -616,179 +632,166 @@ function updateSolid() {
     }
     showError(false);
 
-    // ====== CROSS-AXIS PREPROCESSING ======
-    // Compute adjusted radii for mesh generation
-    // When f and g have opposite signs, the region spans the axis -> solid disc (inner = 0)
-    const rOuterArr = [];
-    const rInnerArr = [];
-
-    for (let i = 0; i <= CONFIG.resolution; i++) {
-        const f = yOuter[i];
-        const g = yInner[i];
-
-        if (f * g < 0) {
-            // Opposite signs: region spans the rotation axis
-            rOuterArr.push(Math.max(Math.abs(f), Math.abs(g)));
-            rInnerArr.push(0);
-        } else {
-            // Same sign: washer method
-            rOuterArr.push(Math.max(Math.abs(f), Math.abs(g)));
-            rInnerArr.push(Math.min(Math.abs(f), Math.abs(g)));
-        }
-    }
-
     // Remove existing meshes
     removeSolid();
 
-    // ====== CREATE WASHER SOLID ======
-    // Outer surface: rOuterArr, Inner surface: rInnerArr
-    // Both rotate around X-axis
+    const renderMode = document.getElementById('render-mode') ? document.getElementById('render-mode').value : 'smooth';
+    let geometry = null;
 
-    const positions = [];
-    const indices = [];
+    if (renderMode === 'disks') {
+        const n = parseInt(document.getElementById('slider-disk-count').value) || 20;
+        geometry = createDisks(a, b, n, angleRad);
+    } else {
+        // ====== SMOOTH LATHE METHOD ======
+        // Compute adjusted radii for mesh generation
+        const rOuterArr = [];
+        const rInnerArr = [];
 
-    const thetaSegments = CONFIG.segments;
-    const xSegments = CONFIG.resolution;
+        for (let i = 0; i <= CONFIG.resolution; i++) {
+            const f = yOuter[i];
+            const g = yInner[i];
 
-    // Helper function to add a surface
-    function addSurface(radiusArray, startVertexIndex, flipNormals = false) {
-        const surfaceIndices = [];
-
-        // Generate vertices
-        for (let i = 0; i <= xSegments; i++) {
-            const x = xValues[i];
-            const r = Math.abs(radiusArray[i]);
-
-            for (let j = 0; j <= thetaSegments; j++) {
-                const theta = (j / thetaSegments) * angleRad;
-
-                const px = x;
-                const py = r * Math.cos(theta);
-                const pz = r * Math.sin(theta);
-
-                positions.push(px, py, pz);
+            if (f * g < 0) {
+                // Opposite signs: region spans the rotation axis
+                rOuterArr.push(Math.max(Math.abs(f), Math.abs(g)));
+                rInnerArr.push(0);
+            } else {
+                // Same sign: washer method
+                rOuterArr.push(Math.max(Math.abs(f), Math.abs(g)));
+                rInnerArr.push(Math.min(Math.abs(f), Math.abs(g)));
             }
         }
 
-        // Generate indices
-        for (let i = 0; i < xSegments; i++) {
-            for (let j = 0; j < thetaSegments; j++) {
-                const va = startVertexIndex + i * (thetaSegments + 1) + j;
-                const vb = va + 1;
-                const vc = va + (thetaSegments + 1);
-                const vd = vc + 1;
+        const positions = [];
+        const indices = [];
 
-                if (flipNormals) {
-                    indices.push(va, vb, vc);
-                    indices.push(vb, vd, vc);
-                } else {
-                    indices.push(va, vc, vb);
-                    indices.push(vb, vc, vd);
+        const thetaSegments = CONFIG.segments;
+        const xSegments = CONFIG.resolution;
+
+        // Helper function to add a surface
+        function addSurface(radiusArray, startVertexIndex, flipNormals = false) {
+            // Generate vertices
+            for (let i = 0; i <= xSegments; i++) {
+                const x = xValues[i];
+                const r = Math.abs(radiusArray[i]);
+
+                for (let j = 0; j <= thetaSegments; j++) {
+                    const theta = (j / thetaSegments) * angleRad;
+
+                    const px = x;
+                    const py = r * Math.cos(theta);
+                    const pz = r * Math.sin(theta);
+
+                    positions.push(px, py, pz);
                 }
             }
-        }
 
-        return (xSegments + 1) * (thetaSegments + 1);
-    }
+            // Generate indices
+            for (let i = 0; i < xSegments; i++) {
+                for (let j = 0; j < thetaSegments; j++) {
+                    const va = startVertexIndex + i * (thetaSegments + 1) + j;
+                    const vb = va + 1;
+                    const vc = va + (thetaSegments + 1);
+                    const vd = vc + 1;
 
-    // Add outer surface (rOuterArr)
-    let vertexCount = 0;
-    vertexCount += addSurface(rOuterArr, vertexCount, false);
-
-    // Add inner surface (rInnerArr) - with flipped normals
-    const innerStartIdx = vertexCount;
-    vertexCount += addSurface(rInnerArr, innerStartIdx, true);
-
-    // ====== ADD END CAPS (washer discs at x=a and x=b) ======
-    // Helper function to add a washer cap at a specific x position
-    function addEndCap(xPos, rOuter, rInner, startVertexIdx, facing) {
-        const capPositions = [];
-
-        // Outer ring vertices
-        for (let j = 0; j <= thetaSegments; j++) {
-            const theta = (j / thetaSegments) * angleRad;
-            const py = Math.abs(rOuter) * Math.cos(theta);
-            const pz = Math.abs(rOuter) * Math.sin(theta);
-            positions.push(xPos, py, pz);
-        }
-
-        // Inner ring vertices
-        for (let j = 0; j <= thetaSegments; j++) {
-            const theta = (j / thetaSegments) * angleRad;
-            const py = Math.abs(rInner) * Math.cos(theta);
-            const pz = Math.abs(rInner) * Math.sin(theta);
-            positions.push(xPos, py, pz);
-        }
-
-        // Create triangles between outer and inner rings
-        const outerStart = startVertexIdx;
-        const innerStart = startVertexIdx + (thetaSegments + 1);
-
-        for (let j = 0; j < thetaSegments; j++) {
-            const vo1 = outerStart + j;
-            const vo2 = outerStart + j + 1;
-            const vi1 = innerStart + j;
-            const vi2 = innerStart + j + 1;
-
-            if (facing > 0) {
-                // Facing positive X direction (cap at x=b)
-                indices.push(vo1, vi1, vo2);
-                indices.push(vo2, vi1, vi2);
-            } else {
-                // Facing negative X direction (cap at x=a)
-                indices.push(vo1, vo2, vi1);
-                indices.push(vo2, vi2, vi1);
+                    if (flipNormals) {
+                        indices.push(va, vb, vc);
+                        indices.push(vb, vd, vc);
+                    } else {
+                        indices.push(va, vc, vb);
+                        indices.push(vb, vc, vd);
+                    }
+                }
             }
+
+            return (xSegments + 1) * (thetaSegments + 1);
         }
 
-        return 2 * (thetaSegments + 1);
-    }
+        // Add outer surface (rOuterArr)
+        let vertexCount = 0;
+        vertexCount += addSurface(rOuterArr, vertexCount, false);
 
-    // Add cap at x = a (left side, facing negative X)
-    const rOuterA = rOuterArr[0];
-    const rInnerA = rInnerArr[0];
-    vertexCount += addEndCap(a, rOuterA, rInnerA, vertexCount, -1);
+        // Add inner surface (rInnerArr) - with flipped normals
+        const innerStartIdx = vertexCount;
+        vertexCount += addSurface(rInnerArr, innerStartIdx, true);
 
-    // Add cap at x = b (right side, facing positive X)
-    const rOuterB = rOuterArr[CONFIG.resolution];
-    const rInnerB = rInnerArr[CONFIG.resolution];
-    vertexCount += addEndCap(b, rOuterB, rInnerB, vertexCount, 1);
+        // ====== ADD END CAPS ======
+        function addEndCap(xPos, rOuter, rInner, startVertexIdx, facing) {
+            for (let j = 0; j <= thetaSegments; j++) {
+                const theta = (j / thetaSegments) * angleRad;
+                const py = Math.abs(rOuter) * Math.cos(theta);
+                const pz = Math.abs(rOuter) * Math.sin(theta);
+                positions.push(xPos, py, pz);
+            }
+            for (let j = 0; j <= thetaSegments; j++) {
+                const theta = (j / thetaSegments) * angleRad;
+                const py = Math.abs(rInner) * Math.cos(theta);
+                const pz = Math.abs(rInner) * Math.sin(theta);
+                positions.push(xPos, py, pz);
+            }
 
-    // Create geometry
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    geometry.setIndex(indices);
-    geometry.computeVertexNormals();
+            const outerStart = startVertexIdx;
+            const innerStart = startVertexIdx + (thetaSegments + 1);
 
-    // ====== MATERIAL BASED ON COLOR MODE ======
+            for (let j = 0; j < thetaSegments; j++) {
+                const vo1 = outerStart + j;
+                const vo2 = outerStart + j + 1;
+                const vi1 = innerStart + j;
+                const vi2 = innerStart + j + 1;
+
+                if (facing > 0) {
+                    indices.push(vo1, vi1, vo2);
+                    indices.push(vo2, vi1, vi2);
+                } else {
+                    indices.push(vo1, vo2, vi1);
+                    indices.push(vo2, vi2, vi1);
+                }
+            }
+            return 2 * (thetaSegments + 1);
+        }
+
+        const rOuterA = rOuterArr[0];
+        const rInnerA = rInnerArr[0];
+        vertexCount += addEndCap(a, rOuterA, rInnerA, vertexCount, -1);
+
+        const rOuterB = rOuterArr[CONFIG.resolution];
+        const rInnerB = rInnerArr[CONFIG.resolution];
+        vertexCount += addEndCap(b, rOuterB, rInnerB, vertexCount, 1);
+
+        geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setIndex(indices);
+        geometry.computeVertexNormals();
+    } // End Smooth Mode
+
+    if (!geometry) return;
+
+    // ====== MATERIAL & GRADIENT ======
     const currentOpacity = sliderOpacity.value / 100;
     const colorMode = colorModeSelect.value;
     let material;
-    // Fix Transparency Logic: strict opaque if >= 0.99
     const isTransparent = currentOpacity < 0.99;
-    const depthWrite = !isTransparent; // Write depth only when opaque
+    const depthWrite = !isTransparent;
 
     if (colorMode === 'gradient-x') {
-        // GRADIENT MODE: Use vertex colors
         const startColor = new THREE.Color(colorStart.value);
         const midColor = new THREE.Color(colorMid.value);
         const endColor = new THREE.Color(colorEnd.value);
 
+        // Use geometry attributes directly to support both BufferGeometry sources
+        const positions = geometry.attributes.position.array;
         const colors = [];
-        // Gradient along X axis (from a to b)
+
         for (let i = 0; i < positions.length; i += 3) {
             const x = positions[i];
             const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
             let vertexColor;
 
-            // 3-Color Interpolation
             if (t < 0.5) {
-                // First half: Start -> Mid
-                const localT = t * 2; // 0..0.5 -> 0..1
+                const localT = t * 2;
                 vertexColor = new THREE.Color().lerpColors(startColor, midColor, localT);
             } else {
-                // Second half: Mid -> End
-                const localT = (t - 0.5) * 2; // 0.5..1 -> 0..1
+                const localT = (t - 0.5) * 2;
                 vertexColor = new THREE.Color().lerpColors(midColor, endColor, localT);
             }
             colors.push(vertexColor.r, vertexColor.g, vertexColor.b);
@@ -805,7 +808,6 @@ function updateSolid() {
             depthWrite: depthWrite
         });
     } else {
-        // SOLID MODE: Use single color
         material = new THREE.MeshStandardMaterial({
             color: colorSolid.value,
             transparent: isTransparent,
@@ -968,6 +970,103 @@ function updateSolid() {
     updateMeasurements(a, b, angleDeg);
 }
 
+// ============================================
+// DISC METHOD VISUALIZATION
+// ============================================
+
+function createDisks(a, b, n, angleRad) {
+    const dx = (b - a) / n;
+    const geometries = [];
+
+    // Precompile functions for speed
+    const compiledUpper = upperFuncs.map(f => ({
+        func: (x) => safeEval(preprocessInput(f.expr), x),
+        range: [
+            f.rangeStart !== '' ? safeEval(preprocessInput(f.rangeStart), 0) : -Infinity,
+            f.rangeEnd !== '' ? safeEval(preprocessInput(f.rangeEnd), 0) : Infinity
+        ]
+    }));
+
+    const compiledLower = lowerFuncs.map(f => ({
+        func: (x) => safeEval(preprocessInput(f.expr), x),
+        range: [
+            f.rangeStart !== '' ? safeEval(preprocessInput(f.rangeStart), 0) : -Infinity,
+            f.rangeEnd !== '' ? safeEval(preprocessInput(f.rangeEnd), 0) : Infinity
+        ]
+    }));
+
+    // Helper to evaluate max/min at scalar x
+    const evalSet = (compiledList, x, mode) => {
+        const active = compiledList.filter(f => x >= f.range[0] && x <= f.range[1]);
+        if (active.length === 0) return 0;
+        const values = active.map(f => f.func(x)).filter(v => isFinite(v));
+        if (values.length === 0) return 0;
+        return mode === 'max' ? Math.max(...values) : Math.min(...values);
+    };
+
+    for (let i = 0; i < n; i++) {
+        // Midpoint Riemman Sum
+        const xMid = a + dx * (i + 0.5);
+
+        const yUpper = evalSet(compiledUpper, xMid, 'max');
+        const yLower = evalSet(compiledLower, xMid, 'max');
+
+        let rOuter, rInner;
+        if (yUpper * yLower < 0) {
+            rOuter = Math.max(Math.abs(yUpper), Math.abs(yLower));
+            rInner = 0;
+        } else {
+            const r1 = Math.abs(yUpper);
+            const r2 = Math.abs(yLower);
+            rOuter = Math.max(r1, r2);
+            rInner = Math.min(r1, r2);
+        }
+
+        if (rOuter < 0.001) continue;
+
+        const shape = new THREE.Shape();
+        if (angleRad >= Math.PI * 2 - 0.01) {
+            shape.absarc(0, 0, rOuter, 0, Math.PI * 2, false);
+            if (rInner > 0.001) {
+                const hole = new THREE.Path();
+                hole.absarc(0, 0, rInner, 0, Math.PI * 2, true);
+                shape.holes.push(hole);
+            }
+        } else {
+            shape.moveTo(rOuter, 0);
+            shape.absarc(0, 0, rOuter, 0, angleRad, false);
+            shape.lineTo(rInner * Math.cos(angleRad), rInner * Math.sin(angleRad));
+            if (rInner > 0.001) {
+                shape.absarc(0, 0, rInner, angleRad, 0, true);
+            } else {
+                shape.lineTo(0, 0);
+            }
+            shape.lineTo(rOuter, 0);
+        }
+
+        const extrudeSettings = {
+            depth: dx * 0.9,
+            bevelEnabled: false,
+            curveSegments: 12
+        };
+
+        const geom = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+        geom.rotateY(Math.PI / 2);
+        geom.translate(a + dx * i, 0, 0);
+
+        geometries.push(geom);
+    }
+
+    if (geometries.length === 0) return null;
+
+    if (typeof BufferGeometryUtils !== 'undefined' && BufferGeometryUtils.mergeGeometries) {
+        return BufferGeometryUtils.mergeGeometries(geometries);
+    } else {
+        console.warn('BufferGeometryUtils missing');
+        return geometries[0];
+    }
+}
+
 function removeSolid() {
     if (solidMesh) {
         scene.remove(solidMesh);
@@ -1085,7 +1184,9 @@ function renderFunctionList(type) {
                      <div class="latex-mini" id="preview-${type}-${index}"></div>
                 </div>
 
-                <button class="btn-remove" data-type="${type}" data-index="${index}" title="Xóa">×</button>
+                <button class="btn-remove" data-type="${type}" data-index="${index}" title="Xóa">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
             </div>
             
             <div class="func-item-row range-row">
@@ -1182,6 +1283,30 @@ function setupEventListeners() {
     inputA.addEventListener('change', globalUpdate);
     inputB.addEventListener('change', globalUpdate);
     sliderAngle.addEventListener('input', globalUpdate);
+
+    // Render Mode Logic
+    const renderModeSelect = document.getElementById('render-mode');
+    const diskCountGroup = document.getElementById('disk-count-group');
+    const sliderDiskCount = document.getElementById('slider-disk-count');
+    const valueDiskCount = document.getElementById('value-disk-count');
+
+    if (renderModeSelect) {
+        renderModeSelect.addEventListener('change', () => {
+            if (renderModeSelect.value === 'disks') {
+                diskCountGroup.style.display = 'block';
+            } else {
+                diskCountGroup.style.display = 'none';
+            }
+            updateSolid();
+        });
+    }
+
+    if (sliderDiskCount) {
+        sliderDiskCount.addEventListener('input', () => {
+            valueDiskCount.textContent = sliderDiskCount.value;
+            updateSolid();
+        });
+    }
 
     // Auto Sweep: Stop on manual interaction
     sliderAngle.addEventListener('input', () => {
@@ -1292,6 +1417,15 @@ function setupEventListeners() {
             alert('Lỗi tạo link chia sẻ!');
         }
     });
+
+    // Sidebar Toggle
+    const toggleBtn = document.getElementById('sidebar-toggle');
+    const panel = document.getElementById('panel-wrapper'); // Target the wrapper
+    if (toggleBtn && panel) {
+        toggleBtn.addEventListener('click', () => {
+            panel.classList.toggle('collapsed');
+        });
+    }
 
     // Check for Shared State on Load
     if (window.location.hash) {

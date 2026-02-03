@@ -69,18 +69,28 @@ body {
     width: 100vw;
 }
 
-/* --- Control Panel --- */
-.control-panel {
+/* --- Control Panel Wrapper --- */
+.panel-wrapper {
     width: var(--panel-width);
     min-width: var(--panel-width);
     height: 100%;
     background: var(--bg-glass);
     backdrop-filter: blur(20px);
     border-right: 1px solid var(--border-color);
+    position: relative;
+    z-index: 10;
+    transition: margin-left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     flex-direction: column;
+}
+
+/* --- Control Panel Internal (Scrollable) --- */
+.control-panel {
+    width: 100%;
+    height: 100%;
     overflow-y: auto;
-    z-index: 10;
+    display: flex;
+    flex-direction: column;
 }
 
 .control-panel::-webkit-scrollbar {
@@ -135,10 +145,31 @@ body {
 /* --- Control Sections --- */
 .control-section {
     padding: 20px;
-    border-bottom: 1px solid var(--border-color);
+    /* Removed border-bottom as we merged sections */
+}
+
+/* Unified Section Spacing */
+.func-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 24px;
+    margin-bottom: 12px;
+}
+
+/* First header shouldn't have top margin */
+.control-section>.func-group-header:first-child {
+    margin-top: 0;
 }
 
 /* --- Inputs --- */
+.control-label {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0;
+}
+
 .input-group {
     margin-bottom: 16px;
 }
@@ -146,27 +177,172 @@ body {
 .input-group label {
     display: block;
     font-size: 0.9rem;
-    font-weight: 600;
+    font-weight: 500;
     margin-bottom: 8px;
     color: var(--text-primary);
 }
 
+/* ... */
+
+.slider-group label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 10px;
+}
+
 .input-group input[type="text"] {
     width: 100%;
-    padding: 12px 16px;
+    padding: 10px 12px;
     background: var(--bg-input);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     color: var(--text-primary);
     font-family: 'Consolas', monospace;
-    font-size: 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
     transition: all 0.2s;
+}
+
+/* ... */
+
+.func-item input[type="text"] {
+    flex: 1;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-family: 'Consolas', monospace;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* ... */
+
+.input-bound input {
+    width: 100%;
+    padding: 10px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: 'Consolas', monospace;
+    font-size: 0.9rem;
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+/* ... */
+
+.range-row input {
+    width: 60px;
+    padding: 4px 6px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    text-align: center;
+    font-family: 'Consolas', monospace;
+    font-size: 0.85rem;
+    /* Slightly smaller for tight spaces */
+    font-weight: 500;
 }
 
 .input-group input[type="text"]:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+/* Horizontal Group (Label Left, Input Right) */
+.horizontal-group {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.horizontal-group label {
+    margin-bottom: 0;
+    white-space: nowrap;
+    margin-right: 12px;
+}
+
+.horizontal-group select {
+    width: 180px;
+    /* Fixed width for consistency */
+}
+
+/* Modern Select Dropdowns */
+/* Modern Select Dropdowns */
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 100%;
+    padding: 12px 16px;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: 'Quicksand', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    /* Custom Arrow Icon (Chevron Down) */
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23d0d5dd' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 18px;
+    transition: all 0.2s ease;
+}
+
+/* ... existing hover/focus styles ... */
+
+.color-controls select {
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    min-width: 110px;
+}
+
+/* ... */
+
+.color-inputs-container select {
+    flex: 1;
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+select:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+select option {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    padding: 12px;
 }
 
 /* Inline Color Picker Label */
@@ -451,19 +627,75 @@ input[type="color"]:hover {
     width: 20px;
     left: 2px;
     bottom: 2px;
-    background: var(--text-muted);
+    background-color: var(--text-muted);
     border-radius: 50%;
     transition: all 0.3s;
 }
 
 .switch input:checked+.switch-slider {
-    background: var(--primary-color);
+    background-color: var(--primary-color);
     border-color: var(--primary-color);
 }
 
 .switch input:checked+.switch-slider::before {
     transform: translateX(22px);
-    background: white;
+    background-color: white;
+}
+
+/* =========================================
+   UI POLISH (Card Glow & Icons)
+   ========================================= */
+
+/* Card Interactions */
+.func-item {
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    /* Ensure border exists for transition */
+}
+
+.func-item:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 15px rgba(255, 78, 80, 0.15);
+    /* Soft red glow */
+    transform: translateY(-2px);
+}
+
+/* SVG Button Polishing */
+.btn-icon,
+.btn-remove,
+.icon-btn-small {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-icon svg,
+.btn-remove svg {
+    pointer-events: none;
+    /* Let button handle clicks */
+}
+
+.btn-icon:hover,
+.btn-remove:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--primary-color);
+    transform: scale(1.1);
+}
+
+/* Adjust remove button specific positioning if needed */
+.btn-remove {
+    padding: 6px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+}
+
+.btn-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    padding: 6px;
 }
 
 /* --- Sliders --- */
@@ -545,9 +777,9 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .result-label {
-    font-weight: 600;
-    color: var(--text-muted);
-    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 1.1rem;
 }
 
 .result-number {
@@ -597,9 +829,15 @@ input[type="range"]::-webkit-slider-thumb {
     margin-bottom: 8px;
 }
 
+/* Inherit global section-label style, remove overrides */
 .func-group-header .section-label {
-    font-size: 0.95rem;
-    font-weight: 600;
+    /* Previously 0.95rem/600, now inheriting 0.8rem/700/Uppercase from global .section-label */
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    /* Ensure color consistency */
 }
 
 .btn-icon {
@@ -815,6 +1053,14 @@ input[type="range"]::-webkit-slider-thumb {
     height: 100%;
 }
 
+/* Force canvas to fill container, overriding Three.js inline styles */
+#three-canvas canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+    outline: none;
+}
+
 /* --- Error Overlay --- */
 .error-overlay {
     position: absolute;
@@ -901,7 +1147,102 @@ input[type="range"]::-webkit-slider-thumb {
     font-family: 'KaTeX_Main', 'Times New Roman', serif;
 }
 
-/* Slider Values - Quicksand Font */
+/* --- Sidebar Toggle Button --- */
+.control-panel {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    /* Ensure button positions relative to this */
+}
+
+.sidebar-toggle {
+    position: absolute;
+    top: 50%;
+    right: -20px;
+    /* Stick out */
+    width: 20px;
+    height: 60px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-color);
+    border-left: none;
+    /* Connect to panel */
+    border-radius: 0 8px 8px 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    transform: translateY(-50%);
+    z-index: 100;
+    transition: all 0.3s;
+    padding: 0;
+    backdrop-filter: blur(10px);
+}
+
+.sidebar-toggle:hover {
+    background: var(--bg-secondary);
+    color: var(--primary-color);
+    width: 24px;
+    /* Slight expand on hover */
+}
+
+.sidebar-toggle svg {
+    width: 16px;
+    height: 16px;
+    transition: transform 0.3s;
+}
+
+/* Collapsed State (Desktop) */
+.panel-wrapper.collapsed {
+    margin-left: -380px;
+    /* Pull off-screen to left */
+}
+
+/* Icon Rotation Logic */
+.panel-wrapper.collapsed .sidebar-toggle svg {
+    transform: rotate(180deg);
+}
+
+/* Responsive Logic (Mobile) */
+@media (max-width: 900px) {
+    .sidebar-toggle {
+        top: auto;
+        bottom: -20px;
+        /* Stick to bottom */
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 20px;
+        border-right: 1px solid var(--border-color);
+        border-left: 1px solid var(--border-color);
+        border-top: none;
+        border-radius: 0 0 8px 8px;
+    }
+
+    .sidebar-toggle:hover {
+        width: 60px;
+        height: 24px;
+        transform: translateX(-50%);
+    }
+
+    .sidebar-toggle svg {
+        transform: rotate(90deg);
+        /* Point down by default */
+    }
+
+    .panel-wrapper.collapsed {
+        margin-left: 0;
+        /* Reset desktop margin */
+        margin-top: -50vh;
+        /* Pull off-screen upwards */
+    }
+
+    .panel-wrapper.collapsed .sidebar-toggle svg {
+        transform: rotate(-90deg);
+        /* Point up (or flip) */
+    }
+}
+
 .slider-value {
     font-family: 'Quicksand', sans-serif;
     font-weight: 700;
