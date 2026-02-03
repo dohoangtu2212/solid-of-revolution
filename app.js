@@ -291,7 +291,7 @@ function initThreeJS() {
     const aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
     camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 1000);
     camera.up.set(0, 0, 1);  // Z is up
-    camera.position.set(10, -8, 6);
+    camera.position.set(9, -9, 6); // Isometric view - Zoomed out
     camera.lookAt(0, 0, 0);
 
     // Renderer
@@ -506,8 +506,37 @@ function onWindowResize() {
     renderer.setSize(width, height);
 }
 
+let isResettingCamera = false;
+let isSweeping = false;
+
 function animate() {
     requestAnimationFrame(animate);
+
+    if (isResettingCamera) {
+        // LERP target towards 0,0,0
+        controls.target.lerp(new THREE.Vector3(0, 0, 0), 0.1);
+        if (controls.target.lengthSq() < 0.001) {
+            controls.target.set(0, 0, 0);
+            isResettingCamera = false;
+            // Only enable autoRotate if the checkbox is still checked
+            const toggleRotate = document.getElementById('toggle-rotate');
+            if (toggleRotate && toggleRotate.checked) {
+                controls.autoRotate = true;
+            }
+        }
+    }
+
+    if (isSweeping) {
+        let currentAngle = parseInt(sliderAngle.value);
+        currentAngle += 2; // Speed: 2 degrees per frame
+
+        if (currentAngle >= 360) {
+            currentAngle = 0; // Loop continuously
+        }
+
+        sliderAngle.value = currentAngle;
+        updateSolid();
+    }
     controls.update();
     renderer.render(scene, camera);
 }
@@ -1154,6 +1183,30 @@ function setupEventListeners() {
     inputB.addEventListener('change', globalUpdate);
     sliderAngle.addEventListener('input', globalUpdate);
 
+    // Auto Sweep: Stop on manual interaction
+    sliderAngle.addEventListener('input', () => {
+        if (isSweeping) {
+            isSweeping = false;
+            const btn = document.getElementById('btn-sweep');
+            if (btn) btn.textContent = '▶';
+        }
+    });
+
+    // Auto Sweep Button
+    const btnSweep = document.getElementById('btn-sweep');
+    if (btnSweep) {
+        btnSweep.addEventListener('click', () => {
+            isSweeping = !isSweeping;
+            if (isSweeping) {
+                sliderAngle.value = 0;
+                updateSolid();
+                btnSweep.textContent = '⏹';
+            } else {
+                btnSweep.textContent = '▶';
+            }
+        });
+    }
+
     // Opacity
     // Opacity
     sliderOpacity.addEventListener('input', () => {
@@ -1268,8 +1321,19 @@ function setupEventListeners() {
         const toggleRotate = document.getElementById('toggle-rotate');
         if (toggleRotate) {
             toggleRotate.addEventListener('change', () => {
-                controls.autoRotate = toggleRotate.checked;
-                controls.autoRotateSpeed = 2.0; // Adjust speed as needed
+                if (toggleRotate.checked) {
+                    // Determine if we need to smooth reset or just start
+                    if (controls.target.lengthSq() > 0.01) {
+                        isResettingCamera = true;
+                        controls.autoRotate = false; // Wait for reset
+                    } else {
+                        controls.autoRotate = true;
+                    }
+                } else {
+                    controls.autoRotate = false;
+                    isResettingCamera = false;
+                }
+                controls.autoRotateSpeed = 2.0;
             });
         }
 

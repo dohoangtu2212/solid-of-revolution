@@ -84,10 +84,15 @@
 
                 <!-- Slider Angle -->
                 <div class="slider-group">
-                    <label>
-                        <span>Góc quay:</span>
+                    <div class="slider-header"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-weight: 600;">Góc quay:</span>
+                            <button id="btn-sweep" class="icon-btn-small" title="Chạy mô phỏng vòng lặp"
+                                style="background: none; border: 1px solid var(--border-color); color: var(--text-primary); cursor: pointer; border-radius: 4px; padding: 0px 6px; font-size: 0.8rem; line-height: 1.5;">▶</button>
+                        </div>
                         <span id="value-angle" class="slider-value">360°</span>
-                    </label>
+                    </div>
                     <input type="range" id="slider-angle" min="0" max="360" value="360" step="1">
                 </div>
 
@@ -110,9 +115,9 @@
                         </select>
                         <div class="color-pickers" id="color-pickers">
                             <input type="color" id="color-solid" value="#4ECDC4" class="hidden" title="Màu khối">
-                            <input type="color" id="color-start" value="#FF9A9E" title="Màu đầu">
-                            <input type="color" id="color-mid" value="#a18cd1" class="hidden" title="Màu giữa">
-                            <input type="color" id="color-end" value="#4ECDC4" title="Màu cuối">
+                            <input type="color" id="color-start" value="#FF4E50" title="Màu đầu">
+                            <input type="color" id="color-mid" value="#F9D423" class="hidden" title="Màu giữa">
+                            <input type="color" id="color-end" value="#00C9FF" title="Màu cuối">
                         </div>
                     </div>
                 </div>
